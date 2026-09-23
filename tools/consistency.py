@@ -9,7 +9,7 @@ consistency.py — 路书 HTML「版式一致性」校验
 
 用法：
     python consistency.py 新路书.html [更多.html ...] [--base 基准骨架.html] [--days 5]
-默认基准 = travel-planner skill 的 assets/路书_基准骨架.html
+默认基准 = jianhao-travel-planner（见好 · 旅行规划器）skill 的 assets/路书_基准骨架.html
 退出码：0 = 全部一致；1 = 有不一致。
 
 校验项（基准即真值，不硬编码指纹数字——指纹随基准改动而变）：
