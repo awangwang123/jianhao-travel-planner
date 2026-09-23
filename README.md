@@ -1,4 +1,4 @@
-# travel-planner 公用版 v1.0 — 使用说明
+# 见好 · 旅行规划器（jianhao-travel-planner）v1.0 — 使用说明
 
 > 2026-09-21 从作者本体 v3.26 派生。打开 `SKILL.md` 可见完整工作流与版本演进记录（每条规矩后面的翻车实录是精华，建议通读）。
 
@@ -8,23 +8,23 @@
 
 ## 安装（2 分钟）
 
-解压后你会得到一个 `travel-planner` 文件夹（别改名），把它整个放进 skills 目录：
+解压后你会得到一个 `jianhao-travel-planner` 文件夹（别改名），把它整个放进 skills 目录：
 
 - **全局**（推荐）：`~/.claude/skills/`（Windows 即 `C:\Users\<用户名>\.claude\skills\`）
 - **单项目**：`<项目>\.claude\skills\`
 
-装好后的路径应该是 `…/skills/travel-planner/SKILL.md`。放对之后，跟 AI 说"周末想去 XX 玩"就会被自动触发。
+装好后的路径应该是 `…/skills/jianhao-travel-planner/SKILL.md`。放对之后，跟 AI 说"周末想去 XX 玩"就会被自动触发。
 
 目录结构（缺一不可）：
 
 ```
-travel-planner/
+jianhao-travel-planner/
 ├── SKILL.md          ← 工作流正本
 ├── assets/           ← 路书+情报卡两份 HTML 基准骨架
 └── tools/            ← consistency.py（骨架校验）+ desource.py（脱敏）
 ```
 
-> ⚠️ **已装过 travel-planner？** 本包拷入 skills 目录会覆盖它。如果那份是别人（比如作者）的自用版，先给人家留底再装。
+> ⚠️ **已有同名包？** 如果 skills 目录里已存在 `jianhao-travel-planner` 文件夹，本包拷入会覆盖它（作者的自用版叫 `travel-planner`，不同名、不受影响）。
 
 ## 配图 key（再花 2 分钟）
 
