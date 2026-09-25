@@ -233,7 +233,7 @@ b,strong{color:var(--ink)}
         <section id="day5"><!-- 逐日 Day5（结构同 Day1） --></section>
         <section id="boost"><!-- 备选/加餐：时间富余才去的点 + 顺路可插的项目 --></section>
         <section id="ticket"><!-- 门票与预约：多档价格拆清（联票含不含景交）+ 放票时间 + 预约截止 + 优惠票口径 --></section>
-        <section id="tips"><!-- 提示与避雷：.tips 里的 .tip，每条「真实场景+应对」式；面向长辈群体改称「温馨提示」 --></section>
+        <section id="tips"><!-- 提示与避雷：.tips 里每条 <div class="tip"><div>真实场景+应对</div></div>——内容必须包一层元素！.tip::before 数字占 44px 首列，裸文本会溢出竖排（武汉 v1 实证）；面向长辈群体改称「温馨提示」 --></section>
         <section id="stay"><!-- 住宿：六维度「住」的独立区块（v3.27 补全）——已订口径（退房时间/订房问三样/价档参考）或住宿三选表 --></section>
         <section id="cost"><!-- 预算：.stats 概览 + 逐项表 + 人均 + 隐藏成本行 --></section>
         <section id="sos"><!-- 应急：每个关键环节一个 .sos Plan B（错过车/暴雨/约满/肠胃） --></section>
@@ -249,6 +249,7 @@ b,strong{color:var(--ink)}
   <h2>【目的地】路书 · 【行程主题】</h2>
   <p>【出发地】出发 · 【日期区间】 · 【人数结构】<br>本地单文件 · 无外部依赖 · 断网可打开<br>信息 【实查日期】联网实查 · 未核实项已标注</p>
   <p>配图：【逐张写明哪些是当地实景照、哪些是同题材示意（示意项须在 caption 标「（示意）」）】；图源 【图源】<br>【自绘示意图说明：非等比例、仅供参考】</p>
+  <p style="margin-top:18px;font-weight:700">方案仅供参考——安全和开心，才是最重要的。🌕</p>
 </footer>
   </div>
 </main>
@@ -316,7 +317,7 @@ b,strong{color:var(--ink)}
         navLinks.forEach(function(a){ a.classList.toggle("on", a.getAttribute("href") === "#"+id); });
       }
     });
-  }, { rootMargin: "-30% 0px -55% 0px" });
+  }, { rootMargin: "-25% 0px -35% 0px" });
   secs.forEach(function(s){ io.observe(s); });
 
   /* ---------- 6. 返回顶部 ---------- */
