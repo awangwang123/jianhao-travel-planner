@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="generator" content="jianhao-travel-planner · 路书基准骨架 v1 · 指纹 769d1d9f64">
+<meta name="generator" content="jianhao-travel-planner · 路书基准骨架 v1 · 指纹 9c3c6249a4">
 <title>【目的地】路书 · 基准骨架</title>
 <script>document.documentElement.classList.add('js');</script>
 <style>
@@ -44,7 +44,7 @@ section{padding:64px 0;border-bottom:1px solid var(--line)}
 section:last-of-type{border-bottom:none}
 .eyebrow{font-size:.62rem;letter-spacing:.24em;color:var(--accent);text-transform:uppercase;font-weight:600;margin-bottom:12px}
 h1{font-size:clamp(1.7rem,4vw,2.5rem);line-height:1.35;font-weight:800;max-width:16em}
-h2{font-size:clamp(1.25rem,2.4vw,1.6rem);line-height:1.4;font-weight:800}
+h2{font-size:clamp(1.45rem,2.7vw,1.95rem);line-height:1.35;font-weight:800}
 .lead{color:var(--ink2);margin-top:12px;max-width:34em}
 
 /* ---------- 通用卡片/标签/表格 ---------- */
@@ -197,21 +197,22 @@ b,strong{color:var(--ink)}
     <div class="nav-group">
       <div class="nav-label">行程</div>
       <a href="#overview">总览</a>
-      <a href="#drive">行 · 路程与停车</a>
+      <a href="#drive">路程</a>
           <a href="#day1">第 1 天 · 【当日主题】</a>
       <a href="#day2">第 2 天 · 【当日主题】</a>
       <a href="#day3">第 3 天 · 【当日主题】</a>
       <a href="#day4">第 4 天 · 【当日主题】</a>
       <a href="#day5">第 5 天 · 【当日主题】</a>
-      <a href="#boost">多家庭 / 天数变体</a>
+      <a href="#boost">备选</a>
     </div>
     <div class="nav-group nav-group--chips">
       <div class="nav-label">备忘</div>
-      <a href="#ticket">门票优惠</a>
-      <a href="#tips">温馨提示</a>
-      <a href="#cost">花多少钱</a>
-      <a href="#eat">美食清单</a>
+      <a href="#ticket">门票</a>
+      <a href="#tips">提示</a>
+      <a href="#stay">住宿</a>
+      <a href="#cost">预算</a>
       <a href="#sos">应急</a>
+      <a href="#eat">美食</a>
       <a href="#gift">特产</a>
     </div>
   </nav>
@@ -233,10 +234,11 @@ b,strong{color:var(--ink)}
         <section id="boost"><!-- 备选/加餐：时间富余才去的点 + 顺路可插的项目 --></section>
         <section id="ticket"><!-- 门票与预约：多档价格拆清（联票含不含景交）+ 放票时间 + 预约截止 + 优惠票口径 --></section>
         <section id="tips"><!-- 提示与避雷：.tips 里的 .tip，每条「真实场景+应对」式；面向长辈群体改称「温馨提示」 --></section>
+        <section id="stay"><!-- 住宿：六维度「住」的独立区块（v3.27 补全）——已订口径（退房时间/订房问三样/价档参考）或住宿三选表 --></section>
         <section id="cost"><!-- 预算：.stats 概览 + 逐项表 + 人均 + 隐藏成本行 --></section>
         <section id="sos"><!-- 应急：每个关键环节一个 .sos Plan B（错过车/暴雨/约满/肠胃） --></section>
         <section id="eat"><!-- 美食清单：早/午/晚/宵夜 × 地界成表；排序=行程时间线，不按类别
-      结构标准（v3.22 / WB 6.8.4）：每日必须有午餐+晚餐行（园内/高铁上解决也要有行）；
+      结构标准（结构标准 v3.22）：每日必须有午餐+晚餐行（园内/高铁上解决也要有行）；
       早餐与宵夜用「随意」设定——<b>早餐</b> · 随意｜<b>宵夜</b> · 随意（不限定哪一天、显示地点、给店+营业时间，各 2 家左右）；
       下午茶：出名地推 2 家名店 / 不出名地推有品味的咖啡馆或小吃；
       每日行程卡的午/晚只推 1 家 + 行尾「（更多选择在美食清单）」 --></section>
