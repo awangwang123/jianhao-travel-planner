@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="generator" content="jianhao-travel-planner · 路书基准骨架 v1 · 指纹 9c3c6249a4">
+<meta name="generator" content="jianhao-travel-planner · 基准骨架 · 指纹 9c3c6249a4">
 <title>【目的地】路书 · 基准骨架</title>
 <script>document.documentElement.classList.add('js');</script>
 <style>
@@ -238,7 +238,7 @@ b,strong{color:var(--ink)}
         <section id="cost"><!-- 预算：.stats 概览 + 逐项表 + 人均 + 隐藏成本行 --></section>
         <section id="sos"><!-- 应急：每个关键环节一个 .sos Plan B（错过车/暴雨/约满/肠胃） --></section>
         <section id="eat"><!-- 美食清单：早/午/晚/宵夜 × 地界成表；排序=行程时间线，不按类别
-      结构标准（结构标准 v3.22）：每日必须有午餐+晚餐行（园内/高铁上解决也要有行）；
+      结构标准（v3.22 / WB 6.8.4）：每日必须有午餐+晚餐行（园内/高铁上解决也要有行）；
       早餐与宵夜用「随意」设定——<b>早餐</b> · 随意｜<b>宵夜</b> · 随意（不限定哪一天、显示地点、给店+营业时间，各 2 家左右）；
       下午茶：出名地推 2 家名店 / 不出名地推有品味的咖啡馆或小吃；
       每日行程卡的午/晚只推 1 家 + 行尾「（更多选择在美食清单）」 --></section>
@@ -272,8 +272,11 @@ b,strong{color:var(--ink)}
       var card = sec.querySelector(".day");
       if (card) card.classList.add("today");
       var navA = document.querySelector('.side nav a[href="#'+todayId+'"]');
-      if (navA) navA.innerHTML = '<span class="dot"></span>' + navA.textContent;
-      setTimeout(function(){ sec.scrollIntoView({behavior:"smooth", block:"start"}); }, 600);
+      if (navA) navA.innerHTML = '<span class="dot"></span>' + navA.textContent + ' · 今天';
+      function jumpToday(){ lockNav(todayId); sec.scrollIntoView({behavior:"instant", block:"start"}); }
+      /* 布局稳定后再跳（固定 600ms 会撞上 SVG/字体重排，落点漂移一整个区块——东京版实测） */
+      if (document.readyState === "complete"){ setTimeout(jumpToday, 300); }
+      else { window.addEventListener("load", function(){ setTimeout(jumpToday, 300); }); }
     }
   } else {
     var prep = document.getElementById("prepCard");
@@ -306,18 +309,31 @@ b,strong{color:var(--ink)}
     });
   });
 
-  /* ---------- 5. 滚动监听：侧栏高亮 + 入场动效 ---------- */
+  /* ---------- 5. 滚动监听：侧栏高亮 + 入场动效 ----------
+     高亮双通道：滚动 = 贴顶窄带 observer（12%~22%，短区块也顺序逐个亮）；
+     点击/当日跳转 = navLock 目标锁（点哪亮哪，平滑滚动途中不闪跳）。 */
   var navLinks = Array.prototype.slice.call(document.querySelectorAll(".side nav a"));
   var secs = Array.prototype.slice.call(document.querySelectorAll("main section"));
+  var navLock = null, lockTimer = null;
+  function setOn(id){
+    navLinks.forEach(function(a){ a.classList.toggle("on", a.getAttribute("href") === "#"+id); });
+  }
+  function lockNav(id){
+    navLock = id; setOn(id);
+    if (lockTimer) clearTimeout(lockTimer);
+    lockTimer = setTimeout(function(){ navLock = null; }, 1200);
+  }
+  navLinks.forEach(function(a){
+    a.addEventListener("click", function(){ lockNav((a.getAttribute("href") || "").slice(1)); });
+  });
   var io = new IntersectionObserver(function(entries){
     entries.forEach(function(en){
       if (en.isIntersecting){
         en.target.classList.add("in");
-        var id = en.target.id;
-        navLinks.forEach(function(a){ a.classList.toggle("on", a.getAttribute("href") === "#"+id); });
+        if (!navLock) setOn(en.target.id);
       }
     });
-  }, { rootMargin: "-25% 0px -35% 0px" });
+  }, { rootMargin: "-12% 0px -78% 0px" });
   secs.forEach(function(s){ io.observe(s); });
 
   /* ---------- 6. 返回顶部 ---------- */
