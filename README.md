@@ -14,7 +14,7 @@
 ![配图](https://img.shields.io/badge/配图-真实实拍-8b5cf6?style=flat-square)
 ![API](https://img.shields.io/badge/付费_API-不需要-0ea5e9?style=flat-square)
 
-<sub><a href="#这是什么">这是什么</a> · <a href="#你能得到什么">能得到什么</a> · <a href="#一份路书里有什么">路书板块</a> · <a href="#触发词">触发词</a> · <a href="#安装2-分钟">安装</a> · <a href="#版本">版本</a></sub>
+<sub><a href="#这是什么">这是什么</a> · <a href="#你能得到什么">能得到什么</a> · <a href="#一份路书里有什么">路书板块</a> · <a href="#触发词">触发词</a> · <a href="#安装2-分钟">安装</a> · <a href="#版本">版本</a> · <a href="TUTORIAL.md">📖 零基础教程</a> · <a href="https://github.com/awangwang123/jianhao-travel-planner/discussions/1">📍 城市许愿池</a></sub>
 
 </div>
 
@@ -72,6 +72,8 @@
 
 ## 安装（2 分钟）
 
+> 🐣 **完全没接触过 Claude Code？** 直接看 **[零基础跑通指南 TUTORIAL.md](TUTORIAL.md)**——从装 AI 助手到拿到第一份路书，每一步带自检。
+
 解压后你会得到一个 `jianhao-travel-planner` 文件夹（别改名），把它整个放进 skills 目录：
 
 - **全局**（推荐）：`~/.claude/skills/`（Windows 即 `C:\Users\<用户名>\.claude\skills\`）
@@ -124,3 +126,9 @@ jianhao-travel-planner/
 - **v1.2**（2026-09-29）：导航体验升级——侧栏滚动按序高亮、点击锁定、当日自动定位
 - **v1.1**（2026-09-26）：修正打包结构与安装说明
 - **v1.0**（2026-09-23）：开源首发
+
+## 反馈与共创
+
+- 🐛 **报错/用不了**：[Issues](https://github.com/awangwang123/jianhao-travel-planner/issues) 发帖（有模板）
+- 📍 **许愿城市**：[旅行许愿池](https://github.com/awangwang123/jianhao-travel-planner/discussions/1)——点赞最高的城市，下一份官方示例就是它（附完整生成过程记录）
+- 💬 其他想法：[Discussions](https://github.com/awangwang123/jianhao-travel-planner/discussions) 随便聊
