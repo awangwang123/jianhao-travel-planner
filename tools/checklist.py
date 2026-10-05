@@ -126,6 +126,24 @@ if broken:
 else:
     addp("价格切碎", "无")
 
+# ---------- 7b. 每日配图对称律（v3.38：每日 2 或 4 张，禁 3） ----------
+fig_bad = []
+for d in days:
+    m = re.search(r'<section id="' + d + r'".*?</section>', t, re.S)
+    n = m.group(0).count("<figure") if m else 0
+    if n not in (2, 4):
+        fig_bad.append(f"{d}={n}张")
+if fig_bad:
+    addf("配图对称律", "、".join(fig_bad) + "（v3.38：每日 2 或 4 张，.photos 为 2 列网格，3 张=不对称）")
+else:
+    addp("配图对称律", f"{len(days)} 天全部 2/4 张")
+
+# ---------- 7c. navLock 特征（导航双通道，9/27 根治） ----------
+if "navLock" in t:
+    addp("navLock", "导航双通道在位")
+else:
+    addf("navLock", "无 navLock 特征 = 旧导航 JS（滚动高亮乱跳/点击不同步老毛病）——从基准骨架原样带走 script 块，勿自写")
+
 # ---------- 8. 视觉项（可选） ----------
 if VISUAL:
     try:
