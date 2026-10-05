@@ -106,6 +106,36 @@ python tools/checklist.py 你的路书.html --visual
 
 ---
 
+## 进阶：给 AI 上锁（可选，新手可跳过）
+
+第 6 步的验收靠你手动跑脚本。如果你想**强制** AI 每次交稿前必须跑过检查（不跑就拦住），Claude Code 的 hooks 机制可以做到：
+
+1. 打开（没有就新建）`~/.claude/settings.json`，加入：
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ~/.claude/skills/jianhao-travel-planner/tools/checklist.py \"$(find . -maxdepth 2 -name '*路书*.html' -newer ~/.claude/skills/jianhao-travel-planner/SKILL.md | head -1)\" || echo '⚠️ checklist 未通过——请先修复再结束'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+2. 重启 Claude Code 生效。之后 AI 每次想结束任务，系统都会自动跑一遍检查——没过就提醒它修复。
+
+> 说明：①仅 Claude Code 用户可用（其他 AI 助手有自己的机制）②路径按你的实际安装位置调整 ③这是「最接近真强制」的手段——不靠 AI 自觉，靠运行时拦截 ④新手可跳过，第 6 步的手动验收已经够用
+
+---
+
 ## 常见问题 FAQ
 
 **Q1：输入 claude 报「不是内部或外部命令」？**
