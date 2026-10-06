@@ -6,6 +6,11 @@
 输出: 每项 PASS/FAIL/WARN/SKIP + 总结。exit 0=全过可交稿；exit 1=有 FAIL 不许交稿。
 2026-10-05 v1.0：源起=东京/国际三册/山东三城三次同类翻车（区块空壳/author 越权/JS 双拼/占位符残留），
 条款靠人记不可靠，机械检查才可靠。
+2026-10-07 v1.1（skill v3.54）：新增四项——①图渲染（视觉项内：滚动触发懒加载后逐张查，
+不滚动=假 FAIL 教训）②badge 在位（v3.27 连坐 bug，被 TRIP 空掩盖）③存储键跨成品污染
+（山东版 tky_font=东京键名案：从别的成品抄 script 未改键）④长【】指引残留（页脚
+「配图：【逐张写明…】」骨架填稿指引未删案；短标注【估算】不受影响）。
+源起=山东三城成品终审：机械 13 项全过但四项问题全漏——检查项必须跟上翻车形态。
 """
 import sys, re, os, hashlib
 sys.stdout.reconfigure(encoding="utf-8")
@@ -52,6 +57,7 @@ else:
     addp("区块完备", f"10 核心区块 + {len(days)} 个每日区块")
 
 empty_blocks = []
+optional_absent = []
 for sid in secs:
     m = re.search(r'<section id="' + sid + r'".*?</section>', t, re.S)
     if not m:
@@ -59,9 +65,15 @@ for sid in secs:
     txt = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(0))).strip()
     floor = 30 if sid in ("author", "intel") else 80
     if len(txt) < floor:
-        empty_blocks.append(f"#{sid}仅{len(txt)}字")
+        if sid == "intel":
+            # intel=情报卡区块仅自用版装（v3.16），朋友/通用版不装=正常（东京终审先例 2026-09-27）
+            optional_absent.append(sid)
+        else:
+            empty_blocks.append(f"#{sid}仅{len(txt)}字")
 if empty_blocks:
     addf("区块空壳", "、".join(empty_blocks) + " —— 空壳区块不许交稿（东京/国际三册/山东三案实证）")
+elif optional_absent:
+    addp("区块空壳", f"{len(secs)} 个区块非空（intel 空壳=未装选装区块，正常）")
 else:
     addp("区块空壳", f"{len(secs)} 个区块全部非空")
 
@@ -144,6 +156,45 @@ if "navLock" in t:
 else:
     addf("navLock", "无 navLock 特征 = 旧导航 JS（滚动高亮乱跳/点击不同步老毛病）——从基准骨架原样带走 script 块，勿自写")
 
+# ---------- 7d. today-badge 元素在位（v3.27 四补；山东四天全缺案） ----------
+badge_bad = []
+for d in days:
+    m = re.search(r'<section id="' + d + r'".*?</section>', t, re.S)
+    if m and "today-badge" not in m.group(0):
+        badge_bad.append(d)
+if badge_bad:
+    addf("badge 在位", f"{','.join(badge_bad)} 每日卡缺 today-badge 元素（v3.27：每日卡头部必含，显隐由 JS 决定；TRIP 空时不显示=缺陷被掩盖）")
+else:
+    addp("badge 在位", f"{len(days)} 天全在位")
+
+# ---------- 7e. 存储键跨成品污染（山东版 tky_font=东京键名案） ----------
+lkeys = sorted(set(m.group(2) for m in re.finditer(r"localStorage\.\w+\((['\"])([\w-]+)\1", t)))
+KNOWN_CITY = {"tky": "东京", "hl": "檀香山", "mnl": "马尼拉", "chongqing": "重庆",
+              "wuhan": "武汉", "cs": "长沙", "wh": "威海", "qd": "青岛", "yt": "烟台", "sd": "山东"}
+title_m = re.search(r"<title>(.*?)</title>", t)
+title_txt = (title_m.group(1) if title_m else "") + " " + os.path.basename(PATH)
+if not lkeys:
+    addw("存储键", "未发现 localStorage 键（字号记忆功能缺失？人工确认）")
+elif "__CITY___font" in lkeys:
+    addw("存储键", f"{lkeys} —— 基准占位符未替换（派生时应改为本趟前缀，派生首检漏项）")
+else:
+    bad = []
+    for pf in {k.split("_")[0] for k in lkeys if "_" in k}:
+        city = KNOWN_CITY.get(pf)
+        if city and city not in title_txt:
+            bad.append(f"{pf}_→{city}（本稿非{city}）")
+    if bad:
+        addf("存储键", f"{lkeys} —— 跨成品键名污染: {'; '.join(bad)}（从别的成品抄 script 未改键，同一浏览器会与他册互踩字号记忆）")
+    else:
+        addp("存储键", f"{lkeys}")
+
+# ---------- 7f. 长【】指引残留（山东页脚「配图：【逐张写明…】」案） ----------
+long_bracket = re.findall(r"【[^】]{15,}】", t)
+if long_bracket:
+    addf("【】指引残留", f"{len(long_bracket)} 处长【】=骨架填稿指引未删: {long_bracket[0][:34]}…（短标注如【估算】【未核实】不受影响）")
+else:
+    addp("【】指引残留", "无")
+
 # ---------- 8. 视觉项（可选） ----------
 if VISUAL:
     try:
@@ -163,6 +214,23 @@ if VISUAL:
                 else:
                     addp(f"{tag}视口", "0 错 0 溢出")
                 pg.close()
+            # 图渲染（先滚动触发懒加载再查——不滚动=假 FAIL 教训 2026-10-07）
+            pg = browser.new_page(viewport={"width": 1280, "height": 900})
+            pg.goto(url, wait_until="domcontentloaded", timeout=30000)
+            n_fig = pg.evaluate("() => document.querySelectorAll('figure img').length")
+            for _ in range(15):
+                pg.evaluate("() => window.scrollBy(0, 1000)")
+                pg.wait_for_timeout(300)
+            pg.wait_for_timeout(800)
+            dead = pg.evaluate("""() => Array.from(document.querySelectorAll('figure img')).filter(
+                im => !(im.naturalWidth > 0 && im.getBoundingClientRect().width > 50)).length""")
+            if n_fig == 0:
+                addw("图渲染", "页面 0 张 figure img（若配图对称律 PASS 则图在结构外，人工确认）")
+            elif dead:
+                addf("图渲染", f"{dead}/{n_fig} 张未真渲染（naturalWidth=0 或显示宽≤50）——base64 损坏或引用失效")
+            else:
+                addp("图渲染", f"{n_fig}/{n_fig} 张真渲染")
+            pg.close()
             browser.close()
     except Exception as e:
         results.append(("SKIP", "视觉项", str(e)[:80]))
