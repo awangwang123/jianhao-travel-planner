@@ -116,7 +116,7 @@ jianhao-travel-planner/
 ## 看完整成品
 
 <details>
-<summary><b>展开看武汉 5 天 4 晚完整路书（长图，约 1.3MB）</b></summary>
+<summary><b>展开看武汉 5 天 4 晚完整路书（长图，约 2MB）</b></summary>
 
 ![完整路书长图](preview/roadbook.jpg)
 
