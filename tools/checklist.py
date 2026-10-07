@@ -6,11 +6,14 @@
 输出: 每项 PASS/FAIL/WARN/SKIP + 总结。exit 0=全过可交稿；exit 1=有 FAIL 不许交稿。
 2026-10-05 v1.0：源起=东京/国际三册/山东三城三次同类翻车（区块空壳/author 越权/JS 双拼/占位符残留），
 条款靠人记不可靠，机械检查才可靠。
+2026-10-07 v1.2（skill v3.56——注：v3.56 曾被两会话双占，10/8 收口归并时山东「升级体验必答化」保留 v3.56、苏州「冷知识卡」让号 v3.58，本工具 v1.2 内容对应「升级体验必答化+必答抽查」即现 v3.56）
+必答清单关键词抽查（7g）：作者定稿「不希望再出现老问题」——
+住宿店名/升级体验/雨天方案/隐藏成本/应急医疗/⚠️必办 各区块机器兜底。
 2026-10-07 v1.1（skill v3.54）：新增四项——①图渲染（视觉项内：滚动触发懒加载后逐张查，
 不滚动=假 FAIL 教训）②badge 在位（v3.27 连坐 bug，被 TRIP 空掩盖）③存储键跨成品污染
 （山东版 tky_font=东京键名案：从别的成品抄 script 未改键）④长【】指引残留（页脚
 「配图：【逐张写明…】」骨架填稿指引未删案；短标注【估算】不受影响）。
-源起=山东三城成品终审：机械 13 项全过但四项问题全漏——检查项必须跟上翻车形态。
+源起=山东三城 WB 版终审：机械 13 项全过但四项问题全漏——检查项必须跟上翻车形态。
 """
 import sys, re, os, hashlib
 sys.stdout.reconfigure(encoding="utf-8")
@@ -89,6 +92,30 @@ if bad_meals:
     addf("每日餐行", "、".join(bad_meals) + "（v3.29 机械钩）")
 else:
     addp("每日餐行", f"{len(days)} 天早/午/晚全齐")
+
+
+# ---------- 2b. slot 时间线有序 + 餐行不重复（山东 day2 链式替换污染案：14:00 排在 12:30 前+晚餐双份） ----------
+tl_bad = []
+for d in days:
+    m = re.search(r'<section id="' + d + r'">(.*?)</section>', t, re.S)
+    if not m:
+        continue
+    slots = re.findall(r'<div class="slot"><b>([^<]+)</b>', m.group(1))
+    times = []
+    for s in slots:
+        tm = re.match(r'(\d{1,2}):(\d{2})', s)
+        if tm:
+            times.append(int(tm.group(1)) * 60 + int(tm.group(2)))
+    if times != sorted(times):
+        tl_bad.append(f"{d}时间乱序{times[:6]}")
+    meals = [s for s in slots if any(x in s for x in ("早餐", "午餐", "晚餐"))]
+    dup = sorted({x for x in meals if meals.count(x) > 1})
+    if dup:
+        tl_bad.append(f"{d}重复餐行{dup}")
+if tl_bad:
+    addf("slot 时间线", "；".join(tl_bad) + " —— 每日 slot 必须按时间升序、餐行不重复（链式替换污染案）")
+else:
+    addp("slot 时间线", f"{len(days)} 天时间戳升序+餐行无重复")
 
 # ---------- 3. author 资格 ----------
 if '<section id="author"' in t:
@@ -194,6 +221,68 @@ if long_bracket:
     addf("【】指引残留", f"{len(long_bracket)} 处长【】=骨架填稿指引未删: {long_bracket[0][:34]}…（短标注如【估算】【未核实】不受影响）")
 else:
     addp("【】指引残留", "无")
+
+# ---------- 7g. 必答清单关键词抽查（v1.2，作者：不希望再出现老问题） ----------
+def _sec_txt(sid):
+    m = re.search(r'<section id="' + sid + r'".*?</section>', t, re.S)
+    if not m:
+        return None
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"data:image/[^\"]+", "", m.group(0))))
+
+brand_words = ["全季", "亚朵", "汉庭", "如家", "维也纳", "希尔顿", "万豪", "凯悦", "香格里拉", "民宿", "客栈", "青旅", "搜「", "连锁"]
+checks_7g = []
+st = _sec_txt("stay")
+if st is not None:
+    has_brand = any(w in st for w in brand_words)
+    has_price = ("元" in st or "¥" in st)
+    if not (has_brand and has_price):
+        checks_7g.append(("住宿无具体落脚点", "缺品牌店名/搜索关键词或价格区间——只给片区=老毛病（v3.45 必答①店名）"))
+et = _sec_txt("eat")
+if et is not None:
+    if "升级体验" not in et:
+        checks_7g.append(("美食缺升级体验子表", "v3.55 必答：丰俭由人+体现细节（1-3 家，四项标准 ≥3 才收，无合格如实写无）"))
+    # v3.57 自用版脱敏制后，成稿不再带博主名——信源痕迹查 md 事实源，此处降为 WARN 提醒
+    if not any(w in et for w in ["探店实锤", "单搜记录", "博主"]):
+        results.append(("WARN", "美食信源", "成稿无信源痕迹=脱敏正常；人工确认 md 事实源有单搜记录"))
+        print("🟡 [WARN] 美食信源 | 成稿无信源痕迹=脱敏正常；人工确认 md 事实源有单搜记录")
+tt = _sec_txt("tips")
+if tt is not None and "雨天" not in tt:
+    checks_7g.append(("提示无雨天方案", "v3.29⑥：「雨天方案」是正选之一不是备用"))
+ct = _sec_txt("cost")
+if ct is not None and "隐藏成本" not in ct:
+    checks_7g.append(("预算缺隐藏成本行", "核心铁律 7：过路/停车/服务费/小费必须留行"))
+so = _sec_txt("sos")
+if so is not None and not any(w in so for w in ["医院", "120", "急诊", "医疗"]):
+    checks_7g.append(("应急无医疗落点", "sos 必须有医院/急诊/120 兜底"))
+ov = _sec_txt("overview")
+if ov is not None:
+    if not any(w in ov for w in ["℃", "°C"]):
+        checks_7g.append(("总览无天气格", "天气定节奏铁律：℃ 数据必须显性"))
+    if not any(w in ov for w in ["必办", "提前办", "出发前"]):
+        checks_7g.append(("总览无⚠️必办清单", "出发前动作必须显性（倒计时口径）"))
+if checks_7g:
+    addf("必答抽查", "；".join(f"{n}（{d.split('——')[0]}）" for n, d in checks_7g) + " —— 对照 v3.43-45 必答清单逐块修")
+else:
+    addp("必答抽查", "住宿店名/升级体验/雨天/隐藏成本/医疗/必办 六件全在位")
+
+
+# ---------- 7h. nav 顺序 == DOM 顺序（山东 eat/sos 倒挂案：nav 按标准写、DOM 旧病未修 → 高亮回跳「乱跳」） ----------
+nav_hrefs = re.findall(r'<a href="#([a-z0-9]+)"', t)
+dom_order = [s for s in secs if s in nav_hrefs]
+nav_seq = [h for h in nav_hrefs if h in dom_order]
+if nav_seq != dom_order:
+    badpairs = [(nav_seq[i], dom_order[i]) for i in range(min(len(nav_seq), len(dom_order))) if nav_seq[i] != dom_order[i]]
+    addf("nav==DOM 顺序", f"nav 顺序与页面区块顺序不一致（前 2 处错位: {badpairs[:2]}）——滚动高亮会回跳（用户感知=乱跳）。修法=调整 DOM 区块顺序对齐 nav，或改 nav。")
+else:
+    addp("nav==DOM 顺序", f"{len(nav_seq)} 项顺序一致")
+
+
+# ---------- 7i. nav 分组隔断（v3.16「侧栏两组导航」；山东案：重写 nav 压丢分组实锤） ----------
+n_labels = len(re.findall(r'class="nav-label"', t))
+if n_labels >= 2:
+    addp("nav 分组", f"{n_labels} 组（行程/备忘隔断）")
+else:
+    addf("nav 分组", f"nav-label 仅 {n_labels} 个——基准骨架=两组隔断（行程组：总览/路程/每日/备选；备忘组 chips：门票/提示/住宿/预算/应急/美食/特产），单列长导航=执行偏差")
 
 # ---------- 8. 视觉项（可选） ----------
 if VISUAL:

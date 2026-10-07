@@ -226,7 +226,7 @@ b,strong{color:var(--ink)}
   <div class="wrap">
         <section id="overview"><!-- 总览：eyebrow → h1 → p.lead×2 → .warn-line → 天气区(.weather/.wday) → 天气来源 → #prepCard 出行准备卡 → #gear 装备清单 --></section>
         <section id="drive"><!-- 行：大交通精确时刻 + 市区交通 + 「全程路程时间总表」（每段里程/耗时/节假日预留）+ 停车条（自驾时） --></section>
-        <section id="day1"><!-- 逐日 Day1：.day > .day-head(.day-idx/.today-badge) → .photos 每日配图 → 🧭今日速览 note-row → .slot 时段卡×N → 🚇今日交通 / 📷今日拍 / 🛏住 note-row --></section>
+        <section id="day1"><!-- 逐日 Day1：.day > .day-head(.day-idx/.today-badge) → 🧭今日速览 note-row（v3.59：紧贴 day-head、photos 之前，「**今日速览：**上午=X；下午=Y；傍晚=Z」三件事式）→ .photos 每日配图 → .slot 时段卡×N（📷机位=灰字小字紧随对应 slot，v3.56③）→ 🚇今日交通 / 🛏住 note-row（「📷今日拍」日汇总卡已废止） --></section>
         <section id="day2"><!-- 逐日 Day2（结构同 Day1） --></section>
         <section id="day3"><!-- 逐日 Day3（结构同 Day1） --></section>
         <section id="day4"><!-- 逐日 Day4（结构同 Day1） --></section>
@@ -272,7 +272,7 @@ b,strong{color:var(--ink)}
       var card = sec.querySelector(".day");
       if (card) card.classList.add("today");
       var navA = document.querySelector('.side nav a[href="#'+todayId+'"]');
-      if (navA) navA.innerHTML = '<span class="dot"></span>' + navA.textContent + ' · 今天';
+      if (navA) navA.innerHTML = navA.textContent + ' · 今天';
       function jumpToday(){ lockNav(todayId); sec.scrollIntoView({behavior:"instant", block:"start"}); }
       /* 布局稳定后再跳（固定 600ms 会撞上 SVG/字体重排，落点漂移一整个区块——东京版实测） */
       if (document.readyState === "complete"){ setTimeout(jumpToday, 300); }
