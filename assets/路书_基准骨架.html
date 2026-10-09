@@ -157,11 +157,14 @@ html.js section.in .card,html.js section.in .day,html.js section.in .tip,html.js
   .stats{grid-template-columns:1fr 1fr}
   .sos-grid{grid-template-columns:1fr}
   .slot{grid-template-columns:76px 1fr;gap:10px}
-  .tb{font-size:.78rem}
-  .tb th,.tb td{padding:8px 8px}
+  .tb{font-size:.78rem;table-layout:fixed}
+  .tb th,.tb td{padding:8px 8px;word-break:break-word;overflow-wrap:anywhere}
   .toolbar{top:auto;bottom:14px;left:14px;right:auto;flex-direction:row}
   .tbtn{padding:7px 11px;font-size:.72rem;box-shadow:0 2px 8px rgba(0,0,0,.08);background:rgba(252,251,247,.92)}
 }
+
+/* ---------- 移动端表格列宽（colgroup）在桌面端还原 auto，桌面排版零变化 ---------- */
+@media (min-width:901px){.tb col{width:auto!important}}
 
 /* ---------- 打印 ---------- */
 @media print{
@@ -271,8 +274,6 @@ b,strong{color:var(--ink)}
     if (sec){
       var card = sec.querySelector(".day");
       if (card) card.classList.add("today");
-      var navA = document.querySelector('.side nav a[href="#'+todayId+'"]');
-      if (navA) navA.innerHTML = navA.textContent + ' · 今天';
       function jumpToday(){ lockNav(todayId); sec.scrollIntoView({behavior:"instant", block:"start"}); }
       /* 布局稳定后再跳（固定 600ms 会撞上 SVG/字体重排，落点漂移一整个区块——东京版实测） */
       if (document.readyState === "complete"){ setTimeout(jumpToday, 300); }
