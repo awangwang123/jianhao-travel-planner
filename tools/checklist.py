@@ -4,16 +4,24 @@
   --visual: 额外跑 Playwright 双视口/JS错/图渲染（需本机 playwright+Edge；跑不了会声明 SKIP）
 
 输出: 每项 PASS/FAIL/WARN/SKIP + 总结。exit 0=全过可交稿；exit 1=有 FAIL 不许交稿。
-2026-10-05 v1.0：源起=东京/国际三册/山东三城三次同类翻车（区块空壳/author 越权/JS 双拼/占位符残留），
-条款靠人记不可靠，机械检查才可靠。
-2026-10-07 v1.2（skill v3.56——注：v3.56 曾被两会话双占，10/8 收口归并时山东「升级体验必答化」保留 v3.56、苏州「冷知识卡」让号 v3.58，本工具 v1.2 内容对应「升级体验必答化+必答抽查」即现 v3.56）
-必答清单关键词抽查（7g）：作者定稿「不希望再出现老问题」——
-住宿店名/升级体验/雨天方案/隐藏成本/应急医疗/⚠️必办 各区块机器兜底。
-2026-10-07 v1.1（skill v3.54）：新增四项——①图渲染（视觉项内：滚动触发懒加载后逐张查，
-不滚动=假 FAIL 教训）②badge 在位（v3.27 连坐 bug，被 TRIP 空掩盖）③存储键跨成品污染
-（山东版 tky_font=东京键名案：从别的成品抄 script 未改键）④长【】指引残留（页脚
-「配图：【逐张写明…】」骨架填稿指引未删案；短标注【估算】不受影响）。
-源起=山东三城 WB 版终审：机械 13 项全过但四项问题全漏——检查项必须跟上翻车形态。
+
+版本记录（功能导向）：
+2026-10-12 v1.6：「形态检查组」八项——eyebrow 措辞白名单（自创=FAIL）/冷知识卡逐日/
+机位三条全覆盖/拍摄参数速查卡在 tips/nav 日链接「第 N 天 · 」格式/eat 表头含「备选」
+（每餐 2 家）/figcaption「（示意）」双写/尾部工具条占位。
+⚠️ 老成品跑 v1.6 会在②③④⑥⑧上报 FAIL——按「老成品不动」人工放行，不回改。
+2026-10-10 v1.5：存储键检查补抓「前缀拼接形态」（引号常量形如城市码前缀键）——此前只抓
+localStorage 直调，拼接形态残留漏检。
+2026-10-10 v1.4：①图渲染滚动改「滚到页底为止」（固定步数在长页漏滚，后半图懒加载没触发
+误报死图）②新增「导航今天标记」检查（导航重复标识已废止，今日标识归正文 today-badge）。
+2026-10-10 v1.3：①基准指纹更新（移动端表格修复：媒体查询 .tb 加 table-layout:fixed+桌面
+col 抵消规则）②新增「移动端表格布局」检查（WARN 级，老成品人工放行）。
+2026-10-07 v1.2：必答清单关键词抽查（7g）——住宿店名/升级体验/雨天方案/隐藏成本/应急医疗/
+⚠️必办 各区块机器兜底。
+2026-10-07 v1.1：新增四项——①图渲染（滚动触发懒加载后逐张查，不滚动=假 FAIL）
+②badge 在位 ③存储键跨成品污染 ④长【】指引残留。
+2026-10-05 v1.0：首次发布，11 项通用机械检查（区块非空/每日餐行/JS 拼接/占位符/双视口等）。
+设计原则：检查项必须跟上实机翻车形态，条款靠人记不可靠，机械检查才可靠。
 """
 import sys, re, os, hashlib
 sys.stdout.reconfigure(encoding="utf-8")
@@ -151,12 +159,27 @@ else:
 style = re.search(r"<style[^>]*>(.*?)</style>", t, re.S)
 if style:
     fp = hashlib.md5(style.group(1).encode()).hexdigest()[:10]
-    if fp == "9c3c6249a4":
+    if fp == "9f1fd4856f":
         addp("骨架指纹", fp)
     else:
-        addw("骨架指纹", f"{fp} ≠ 基准 9c3c6249a4——若是刻意改样式需在交付说明注明，否则=派生自旧骨架")
+        addw("骨架指纹", f"{fp} ≠ 基准 9f1fd4856f——若是刻意改样式需在交付说明注明，否则=派生自旧骨架")
 else:
     addw("骨架指纹", "未找到 style 块")
+
+# ---------- 6.5 移动端表格列宽（v1.3，2026-10-10 山东版手机竖排案） ----------
+# 注意：成品可能有多个 max-width:900px 块（如 photos 单行块），必须全部遍历，search 会提前截止误报
+mqs = re.findall(r"@media\s*\(max-width:900px\)\{(.*?)\n\}", t, re.S)
+if mqs and ".tb" in t:
+    if any("table-layout:fixed" in b for b in mqs):
+        addp("移动端表格布局", "fixed 已配（colgroup 按列型在成品层）")
+    else:
+        addw("移动端表格布局", "媒体查询无 table-layout:fixed——手机窄屏表格列宽失衡竖排风险（实机竖排案例）；老成品可人工放行待升级")
+
+# ---------- 6.6 导航「今天」重复标记（v1.4：正文徽章已承担今日标识，导航禁再挂） ----------
+if "navA.innerHTML" in t:
+    addw("导航今天标记", "script 含 navA.innerHTML 当日文字/圆点注入——导航重复标识已废止（v3.64）应删；今日标识由正文 today-badge 承担")
+else:
+    addp("导航今天标记", "无（信息归位正文徽章）")
 
 # ---------- 7. 价格切碎模式（大岛 Ken's 案） ----------
 broken = re.findall(r"¥\d+）\s*\.\d", t)
@@ -195,7 +218,11 @@ else:
     addp("badge 在位", f"{len(days)} 天全在位")
 
 # ---------- 7e. 存储键跨成品污染（山东版 tky_font=东京键名案） ----------
-lkeys = sorted(set(m.group(2) for m in re.finditer(r"localStorage\.\w+\((['\"])([\w-]+)\1", t)))
+lkeys = sorted(
+    set(m.group(2) for m in re.finditer(r"localStorage\.\w+\((['\"])([\w-]+)\1", t))
+    # v1.5：补抓「前缀拼接形态」键——tky_chk_ 曾以字符串常量藏在 script 里漏检（山东版 10/10 双窗合并仲裁案：font 键修了 chk 键没修=双键盲区）
+    | set(m.group(1) for m in re.finditer(r"['\"](\w{2,5}_(?:chk|font)[\w-]*)['\"]", t))
+)
 KNOWN_CITY = {"tky": "东京", "hl": "檀香山", "mnl": "马尼拉", "chongqing": "重庆",
               "wuhan": "武汉", "cs": "长沙", "wh": "威海", "qd": "青岛", "yt": "烟台", "sd": "山东"}
 title_m = re.search(r"<title>(.*?)</title>", t)
@@ -222,7 +249,7 @@ if long_bracket:
 else:
     addp("【】指引残留", "无")
 
-# ---------- 7g. 必答清单关键词抽查（v1.2，作者：不希望再出现老问题） ----------
+# ---------- 7g. 必答清单关键词抽查（v1.2：必答清单机器兜底，） ----------
 def _sec_txt(sid):
     m = re.search(r'<section id="' + sid + r'".*?</section>', t, re.S)
     if not m:
@@ -264,6 +291,46 @@ if checks_7g:
     addf("必答抽查", "；".join(f"{n}（{d.split('——')[0]}）" for n, d in checks_7g) + " —— 对照 v3.43-45 必答清单逐块修")
 else:
     addp("必答抽查", "住宿店名/升级体验/雨天/隐藏成本/医疗/必办 六件全在位")
+
+# ---------- v1.6 形态检查组（2026-10-12 多册实机检查反哺） ----------
+mor = []
+# ① eyebrow 措辞白名单（v3.57 正本集 ∪ 老成品历史口径——新口径优先，老口径放行老成品）
+EB_WHITELIST = {"总览", "路程", "备选 · 想多玩这样加", "门票 · 预约", "真实场景 · 提前知道", "住宿", "预算", "应急",
+                "照着吃就行", "回来带点啥", "特产 · 带一份回家", "提示", "总览 · 行程速览", "路程 · 交通串联",
+                "每段开多久", "进门花多少", "心里有数", "可选 · 更从容", "温馨提示"}
+for eb in re.findall(r'class="eyebrow">([^<]*)<', t):
+    eb = eb.strip()
+    if eb and eb not in EB_WHITELIST:
+        mor.append((f"eyebrow 自创「{eb[:20]}」", "v3.57 正本=武汉式主题词·补充语（正本集见 checklist 源码 EB_WHITELIST），自创措辞=执行偏差"))
+# ② 冷知识卡逐日（v3.58 固定件）
+day_secs = re.findall(r'<section id="day\d+">.*?</section>', t, re.S)
+no_kn = [i + 1 for i, d in enumerate(day_secs) if "你知道吗" not in d]
+if day_secs and no_kn:
+    mor.append((f"冷知识卡缺 {no_kn}", "v3.58 固定件：每日「💡你知道吗：」一条（放 Plan B 后），真·冷知识禁编造"))
+# ③ 机位三条全覆盖（v3.59：位置+时段+拍法）
+no_jw = [i + 1 for i, d in enumerate(day_secs) if "📷 位置：" not in d]
+if day_secs and no_jw:
+    mor.append((f"机位信息缺 {no_jw}", "v3.59 机位标准：每日至少 1 处「📷 位置：…｜时段：…｜拍法：…」三条全灰字"))
+# ④ 参数速查卡（v3.59③：机位日汇总废止后并入 tips）
+if tt is not None and "拍摄参数速查卡" not in tt:
+    mor.append(("tips 缺拍摄参数速查卡", "v3.59③：特殊场景参数（夜景/日落/一人行自拍分 iPhone 安卓）归 tips 速查卡"))
+# ⑤ nav 日链接格式（v3.27 导航族：第 N 天 · 主题）
+bad_nav = [h for h in re.findall(r'<a href="#day\d+"[^>]*>([^<]*)</a>', t) if not re.match(r"第 \d+ 天 · ", h.strip())]
+if bad_nav:
+    mor.append((f"nav 格式违规 {len(bad_nav)} 处", f"v3.27 导航族=「第 N 天 · 主题」两字短名式；实测样本: {bad_nav[:2]}（D1 代号=偷懒替换骨架占位符案）"))
+# ⑥ eat 表头备选列（每餐 2 家口径）
+if et is not None and "备选" not in et:
+    mor.append(("美食表无备选列", "每餐主推+备选 ≥2 家"))
+# ⑦ figcaption（示意）双写
+if re.search(r"（示意）[^<]*（示意）", t):
+    mor.append(("figcaption「（示意）」双写", "嵌入脚本 mark+cap 双带示意标记案——渲染出「（示意）xxx（示意）」"))
+# ⑧ 尾部占位（tailpad 防呆）
+if VISUAL and "tailpad" not in t:
+    mor.append(("缺尾部工具条占位", "移动端底部工具条会遮挡正文最后一行——内容尾部加 height:96px 占位"))
+if mor:
+    addf("形态检查", "；".join(n for n, _ in mor) + " —— 对照 skill 形态条款逐项修（老成品跑 v1.6 报 ②③④⑥⑧ 按惯例人工放行）")
+else:
+    addp("形态检查", "eyebrow 正本/冷知识逐日/机位三条全/参数速查卡/nav 格式/备选列/示意单写/尾部占位 八项全在位")
 
 
 # ---------- 7h. nav 顺序 == DOM 顺序（山东 eat/sos 倒挂案：nav 按标准写、DOM 旧病未修 → 高亮回跳「乱跳」） ----------
@@ -307,16 +374,33 @@ if VISUAL:
             pg = browser.new_page(viewport={"width": 1280, "height": 900})
             pg.goto(url, wait_until="domcontentloaded", timeout=30000)
             n_fig = pg.evaluate("() => document.querySelectorAll('figure img').length")
-            for _ in range(15):
+            for _ in range(80):
+                # v1.4：滚到页底为止——固定 15 步=15000px，长页后半图没滚到=懒加载没触发误报死图（山东版 4/10 实锤 2026-10-10）
                 pg.evaluate("() => window.scrollBy(0, 1000)")
-                pg.wait_for_timeout(300)
+                pg.wait_for_timeout(200)
+                if pg.evaluate("() => Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight - 5"):
+                    break
             pg.wait_for_timeout(800)
             dead = pg.evaluate("""() => Array.from(document.querySelectorAll('figure img')).filter(
                 im => !(im.naturalWidth > 0 && im.getBoundingClientRect().width > 50)).length""")
             if n_fig == 0:
                 addw("图渲染", "页面 0 张 figure img（若配图对称律 PASS 则图在结构外，人工确认）")
             elif dead:
-                addf("图渲染", f"{dead}/{n_fig} 张未真渲染（naturalWidth=0 或显示宽≤50）——base64 损坏或引用失效")
+                # v1.4 二次确认：死图可能是懒加载时序（IO 触发晚/解码慢）而非真坏——回顶再滚底重查一次，仍死才 FAIL
+                pg.evaluate("() => window.scrollTo(0, 0)")
+                pg.wait_for_timeout(400)
+                for _ in range(80):
+                    pg.evaluate("() => window.scrollBy(0, 1000)")
+                    pg.wait_for_timeout(150)
+                    if pg.evaluate("() => Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight - 5"):
+                        break
+                pg.wait_for_timeout(1200)
+                dead2 = pg.evaluate("""() => Array.from(document.querySelectorAll('figure img')).filter(
+                    im => !(im.naturalWidth > 0 && im.getBoundingClientRect().width > 50)).length""")
+                if dead2:
+                    addf("图渲染", f"{dead2}/{n_fig} 张未真渲染（二次确认仍死）——base64 损坏或引用失效")
+                else:
+                    addp("图渲染", f"{n_fig}/{n_fig} 张真渲染（首轮 {dead} 张为懒加载时序，二次确认放行）")
             else:
                 addp("图渲染", f"{n_fig}/{n_fig} 张真渲染")
             pg.close()
