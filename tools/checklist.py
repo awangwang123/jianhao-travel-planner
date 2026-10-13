@@ -220,7 +220,7 @@ else:
 # ---------- 7e. 存储键跨成品污染（山东版 tky_font=东京键名案） ----------
 lkeys = sorted(
     set(m.group(2) for m in re.finditer(r"localStorage\.\w+\((['\"])([\w-]+)\1", t))
-    # v1.5：补抓「前缀拼接形态」键——tky_chk_ 曾以字符串常量藏在 script 里漏检（山东版 10/10 双窗合并仲裁案：font 键修了 chk 键没修=双键盲区）
+    # v1.5：补抓「前缀拼接形态」键——tky_chk_ 曾以字符串常量藏在 script 里漏检（font 键与 chk 键双形态盲区案）
     | set(m.group(1) for m in re.finditer(r"['\"](\w{2,5}_(?:chk|font)[\w-]*)['\"]", t))
 )
 KNOWN_CITY = {"tky": "东京", "hl": "檀香山", "mnl": "马尼拉", "chongqing": "重庆",
