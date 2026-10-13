@@ -79,6 +79,7 @@
 
 - **全局**（推荐）：`~/.claude/skills/`（Windows 即 `C:\Users\<用户名>\.claude\skills\`）
 - **单项目**：`<项目>\.claude\skills\`
+- **可选：启用 pre-push 白名单闸门**（防止白名单外文件被误推上仓）：在仓目录执行 `git config core.hooksPath tools/githooks`——之后任何 push 前自动核对文件清单，白名单外会被硬拦截。
 
 装好后的路径应该是 `…/skills/jianhao-travel-planner/SKILL.md`。放对之后，跟 AI 说"周末想去 XX 玩"就会被自动触发。
 
