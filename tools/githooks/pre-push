@@ -1,0 +1,13 @@
+#!/bin/bash
+# pre-push 白名单闸门（2026-10-13 立，案源：v1.11 三 zip 裹挟上 main——人手 add -A 必被此关拦截）
+# 启用：git config core.hooksPath tools/githooks
+ALLOW='^(SKILL\.md|README\.md|CHANGELOG\.md|TUTORIAL\.md|LICENSE|HISTORY\.md|\.github/|assets/|preview/|tools/(checklist|consistency|desource)\.py|tools/githooks/)$'
+files=$(git diff --name-only origin/main...HEAD 2>/dev/null)
+bad=$(echo "$files" | grep -vE "$ALLOW" | grep -v '^$')
+if [ -n "$bad" ]; then
+  echo '❌ pre-push 闸门：以下文件不在交付白名单，push 已拦截：' >&2
+  echo "$bad" >&2
+  echo '（若是合法新增，先更新 tools/githooks/pre-push 的 ALLOW 与 GIT.md 白名单，再 push）' >&2
+  exit 1
+fi
+exit 0
