@@ -27,7 +27,7 @@ rules.json 结构：
         {"tag":"Day1槽位","mode":"regex","old":"<br><b>📌 六博主.*?心里就有底了。","new":"<br>..."},
         {"tag":"表intro","mode":"exact","old":"<span class=\"intro\">...</span>","new":"<span class=\"intro\">...</span>"}
       ],
-      "drop": ["六博主","唐仁杰","刘雨鑫","米雪","老谢","隋坡","庞师","实探","万赞"]
+      "drop": ["六博主","某博主A","某博主B","某博主C","实探","万赞"]
     }
   ]
 }
