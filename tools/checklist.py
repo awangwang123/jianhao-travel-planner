@@ -1,27 +1,44 @@
 # -*- coding: utf-8 -*-
-"""路书交付前机械检查清单（通用版，任意城市路书可跑）
+"""
+2026-10-19 公用版同步：功能与作者版 v1.9 一致，叙事注释已中性化（实战案例去地名/去署名）。
+路书交付前机械检查清单（通用版，任意城市路书可跑）
 用法: python checklist.py <路书.html> [--visual]
   --visual: 额外跑 Playwright 双视口/JS错/图渲染（需本机 playwright+Edge；跑不了会声明 SKIP）
 
 输出: 每项 PASS/FAIL/WARN/SKIP + 总结。exit 0=全过可交稿；exit 1=有 FAIL 不许交稿。
-
-版本记录（功能导向）：
-2026-10-12 v1.6：「形态检查组」八项——eyebrow 措辞白名单（自创=FAIL）/冷知识卡逐日/
-机位三条全覆盖/拍摄参数速查卡在 tips/nav 日链接「第 N 天 · 」格式/eat 表头含「备选」
-（每餐 2 家）/figcaption「（示意）」双写/尾部工具条占位。
+2026-10-17 v1.9（外部评审三漏检复现+北疆长线出界案，双源反哺）：①天数前置校验——0 个 day 区块时后续循环
+空跑出「0 天全齐」假 PASS，现在 0 天=FAIL+编号跳号=FAIL（修「删全部每日区块仍 PASS」）②2b 重写：slot 时间
+线双形态兼容（<b> 旧形态+slot-time div canonical——旧版只读 <b>，骨架 canonical 整个读不到=时间线检查空转
+假 PASS）+餐段键值去重（每 slot 归入首个餐段词，同段 ≥2 slot=FAIL——旧版比完整标题，不同店名两顿晚餐不判重）
+③新增 2c 动线图出界断言——解析 zoomable SVG 的 polyline/circle 坐标 vs viewBox，出界点>0=FAIL（北疆长线
+G216 绕行 11 点出界 10px 目测漏案：端点在框内≠路径在框内，数学断言替代目测）④--visual 视口 2→4 档
+（+768/320，对齐自查⑱四档要求）⑤回归测试：tools/_reg_v19/ 四坏样本必 FAIL（改闸必跑）。
+2026-10-12 v1.6（南方某册夜四连打回反哺）：「形态检查组」八项——实战拷问「写到规范还犯」的终结手段：
+翻车全在「条款有、检查器没有」的形态层（导航格式 D1 代号案/eyebrow 自创案/冷知识卡缺案/机位三条全时有时无案/
+示意双写案/工具条遮挡案/每餐无备选案/参数速查卡缺案）——检查项跟上翻车形态（v3.54 原则）本轮补齐：
+①eyebrow 措辞白名单（自创=FAIL，v3.57 正本集）②冷知识卡逐日（v3.58 固定件）③机位三条全覆盖（每日「📷 位置：」≥1）
+④拍摄参数速查卡在 tips（v3.59③）⑤nav 日链接「第 N 天 · 」格式（v3.27 导航族）⑥eat 表头含「备选」（每餐 2 家）
+⑦figcaption「（示意）」双写 ⑧尾部工具条占位（tailpad，镇江 9/10 老坑）。
 ⚠️ 老成品跑 v1.6 会在②③④⑥⑧上报 FAIL——按「老成品不动」人工放行，不回改。
-2026-10-10 v1.5：存储键检查补抓「前缀拼接形态」（引号常量形如城市码前缀键）——此前只抓
-localStorage 直调，拼接形态残留漏检。
-2026-10-10 v1.4：①图渲染滚动改「滚到页底为止」（固定步数在长页漏滚，后半图懒加载没触发
-误报死图）②新增「导航今天标记」检查（导航重复标识已废止，今日标识归正文 today-badge）。
-2026-10-10 v1.3：①基准指纹更新（移动端表格修复：媒体查询 .tb 加 table-layout:fixed+桌面
-col 抵消规则）②新增「移动端表格布局」检查（WARN 级，老成品人工放行）。
-2026-10-07 v1.2：必答清单关键词抽查（7g）——住宿店名/升级体验/雨天方案/隐藏成本/应急医疗/
-⚠️必办 各区块机器兜底。
-2026-10-07 v1.1：新增四项——①图渲染（滚动触发懒加载后逐张查，不滚动=假 FAIL）
-②badge 在位 ③存储键跨成品污染 ④长【】指引残留。
-2026-10-05 v1.0：首次发布，11 项通用机械检查（区块非空/每日餐行/JS 拼接/占位符/双视口等）。
-设计原则：检查项必须跟上实机翻车形态，条款靠人记不可靠，机械检查才可靠。
+2026-10-05 v1.0：源起=东京/国际三册/山东三城三次同类翻车（区块空壳/author 越权/JS 双拼/占位符残留），
+条款靠人记不可靠，机械检查才可靠。
+2026-10-16 v1.8：占位符检查先剥离内嵌图片 base64 数据再计数（data:image/*;base64,...）——base64 是随机字节编码，大文件天然可能碰巧含 TODO 等序列造成假 FAIL（东京 480 案/宏村 TODO 案两撞；宏村案当时靠底图转 JPEG 碰运气绕过）；剥离只可能减误报不漏真报（模板残留只存在于可见文本层）。
+2026-10-10 v1.5：存储键检查补抓「前缀拼接形态」（引号常量形如 tky_chk_/sd_font 的城市码前缀键）——此前只抓 localStorage 直调，
+tky_chk_ 残留漏检（山东版双窗合并仲裁案：另一副本修过 chk 键、基线 font 键修了 chk 没修，checklist 全程报 PASS）。
+2026-10-10 v1.4：①图渲染滚动改「滚到页底为止」（固定 15 步=15000px，长页后半图懒加载没触发误报死图——
+山东版 4/10 误报实锤，手动全量实测 10/10 正常）②新增「导航今天标记」检查（navA.innerHTML 注入已废止，
+实战定性——今日标识归正文 today-badge 一处承担）。
+2026-10-10 v1.3：①基准指纹 9c3c6249a4→9f1fd4856f（移动端表格修复：媒体查询 .tb 加
+table-layout:fixed+桌面 col 抵消规则，双骨架同款；成品层按列型配 colgroup——山东版手机竖排案）
+②新增检查「移动端表格布局」（WARN 级）：媒体查询无 fixed=WARN 列宽失衡风险，老成品人工放行待升级。
+2026-10-07 v1.2（skill v3.56——注：v3.56 曾被两会话双占，10/8 收口归并时山东「升级体验必答化」保留 v3.56、苏州「冷知识卡」让号 v3.58，本工具 v1.2 内容对应「升级体验必答化+必答抽查」即现 v3.56）
+必答清单关键词抽查（7g）：实战定规「不希望再出现老问题」——
+住宿店名/升级体验/雨天方案/隐藏成本/应急医疗/⚠️必办 各区块机器兜底。
+2026-10-07 v1.1（skill v3.54）：新增四项——①图渲染（视觉项内：滚动触发懒加载后逐张查，
+不滚动=假 FAIL 教训）②badge 在位（v3.27 连坐 bug，被 TRIP 空掩盖）③存储键跨成品污染
+（山东版 tky_font=东京键名案：从别的成品抄 script 未改键）④长【】指引残留（页脚
+「配图：【逐张写明…】」骨架填稿指引未删案；短标注【估算】不受影响）。
+源起=山东三城协作版终审：机械 13 项全过但四项问题全漏——检查项必须跟上翻车形态。
 """
 import sys, re, os, hashlib
 sys.stdout.reconfigure(encoding="utf-8")
@@ -88,6 +105,17 @@ elif optional_absent:
 else:
     addp("区块空壳", f"{len(secs)} 个区块全部非空")
 
+# ---------- 2a. 天数前置校验（v1.9，GPT 报告三漏检之三：删除全部每日区块后「0 天全齐」空跑 PASS 案） ----------
+if not days:
+    addf("天数前置校验", "每日区块 0 个——无 day 区块时后续循环全部空跑，禁止以「0 天全齐」放行")
+else:
+    nums = [int(x[3:]) for x in days]
+    gaps = [n for n in range(nums[0], nums[-1] + 1) if n not in nums]
+    if gaps:
+        addf("天数前置校验", f"day 编号跳号: 缺 day{','.join(map(str, gaps))}")
+    else:
+        addp("天数前置校验", f"{len(days)} 天（day{nums[0]}-day{nums[-1]}）编号连续")
+
 # ---------- 2. 餐行 ----------
 bad_meals = []
 for d in days:
@@ -102,28 +130,69 @@ else:
     addp("每日餐行", f"{len(days)} 天早/午/晚全齐")
 
 
-# ---------- 2b. slot 时间线有序 + 餐行不重复（山东 day2 链式替换污染案：14:00 排在 12:30 前+晚餐双份） ----------
+# ---------- 2b. slot 时间线有序 + 餐行不重复（v1.9 重写：GPT 报告三漏检之一/之二——旧版只匹配 <b> 形态，骨架 canonical 的 slot-time 结构整个读不到=时间线检查空转假 PASS；餐行去重比完整标题，不同店名的两顿晚餐不判重） ----------
 tl_bad = []
+tl_total = 0
 for d in days:
     m = re.search(r'<section id="' + d + r'">(.*?)</section>', t, re.S)
     if not m:
         continue
-    slots = re.findall(r'<div class="slot"><b>([^<]+)</b>', m.group(1))
+    seg = m.group(1)
+    # 双形态兼容：旧=<div class="slot"><b>HH:MM…文本；新(canonical/武汉v8+)=slot-time div+slot-body div
+    # v1.9a 修：餐段词在 slot-body——按 slot 块抓（起点到下一 slot），时间取 slot-time，餐段词在整块文本找
+    slot_starts = list(re.finditer(r'<div class="slot"><b>([^<]+)</b>|<div class="slot"><div class="slot-time">([^<]+)</div>', seg))
     times = []
-    for s in slots:
-        tm = re.match(r'(\d{1,2}):(\d{2})', s)
+    meal_seq = []
+    for i, sm in enumerate(slot_starts):
+        tlabel = sm.group(1) or sm.group(2) or ""
+        end = slot_starts[i + 1].start() if i + 1 < len(slot_starts) else len(seg)
+        chunk = seg[sm.start():end]
+        tm = re.match(r'\s*(\d{1,2}):(\d{2})(\+1)?', tlabel)
         if tm:
-            times.append(int(tm.group(1)) * 60 + int(tm.group(2)))
+            times.append(int(tm.group(1)) * 60 + int(tm.group(2)) + (1440 if tm.group(3) else 0))
+        body_txt = re.sub(r"<[^>]+>", " ", chunk)
+        head = re.sub(r"\s+", " ", body_txt)[:40]  # 餐段词判定窗口：slot 文本开头 40 字（餐行特征=时间后紧跟餐段；顺带提及如「机场午餐/晚餐」在窗口外不误判）
+        for kw in ("早餐", "午餐", "晚餐"):
+            if kw in head:
+                meal_seq.append(kw)
+                break
+    tl_total += len(times)
     if times != sorted(times):
         tl_bad.append(f"{d}时间乱序{times[:6]}")
-    meals = [s for s in slots if any(x in s for x in ("早餐", "午餐", "晚餐"))]
-    dup = sorted({x for x in meals if meals.count(x) > 1})
+    dup = sorted({x for x in meal_seq if meal_seq.count(x) > 1})
     if dup:
-        tl_bad.append(f"{d}重复餐行{dup}")
-if tl_bad:
-    addf("slot 时间线", "；".join(tl_bad) + " —— 每日 slot 必须按时间升序、餐行不重复（链式替换污染案）")
+        tl_bad.append(f"{d}重复餐段{dup}")
+if not days:
+    pass  # 天数前置校验已 FAIL，此处不再叠加
+elif tl_bad:
+    addf("slot 时间线", "；".join(tl_bad) + " —— 每日 slot 必须按时间升序、同餐段不重复（链式替换污染案+GPT 三漏检回归）")
 else:
-    addp("slot 时间线", f"{len(days)} 天时间戳升序+餐行无重复")
+    addp("slot 时间线", f"{len(days)} 天时间戳升序（读到 {tl_total} 个带时刻 slot）+同餐段无重复")
+
+# ---------- 2c. 动线图出界点断言（v1.9，v1.9 教训：bbox 覆盖路径全程——端点在框内≠路径在框内，长线绕行案 11 点出界 10px 目测漏） ----------
+svg_bad = []
+svg_n = 0
+for sm in re.finditer(r'<svg[^>]*viewBox="0 0 (\d+) (\d+)"[^>]*class="zoomable"[^>]*>(.*?)</svg>', t, re.S):
+    vw, vh, body = int(sm.group(1)), int(sm.group(2)), sm.group(3)
+    svg_n += 1
+    oob = 0
+    for pm in re.finditer(r'<polyline[^>]*points="([^"]+)"', body):
+        for pt in pm.group(1).split():
+            xy = pt.split(",")
+            if len(xy) == 2:
+                x, y = float(xy[0]), float(xy[1])
+                if x < -2 or y < -2 or x > vw + 2 or y > vh + 2:
+                    oob += 1
+    for cm in re.finditer(r'<circle[^>]*cx="(-?[\d.]+)"[^>]*cy="(-?[\d.]+)"', body):
+        x, y = float(cm.group(1)), float(cm.group(2))
+        if x < -2 or y < -2 or x > vw + 2 or y > vh + 2:
+            oob += 1
+    if oob:
+        svg_bad.append(f"SVG#{svg_n}出界{oob}点")
+if svg_bad:
+    addf("动线图出界", "、".join(svg_bad) + " —— polyline/circle 坐标越出 viewBox（bbox 必须覆盖路径全程，数学断言替代目测）")
+else:
+    addp("动线图出界", f"{svg_n} 张 zoomable SVG 坐标全在框内（容差 2px）")
 
 # ---------- 3. author 资格 ----------
 if '<section id="author"' in t:
@@ -145,9 +214,13 @@ else:
     addp("ID 唯一", "无重复 id")
 
 # ---------- 5. 占位符 ----------
+# v1.8：先剥离内嵌图片的 base64 数据再计数——base64 是随机字节编码，大文件天然可能
+# 碰巧含 "TODO" 等序列造成假 FAIL（东京 480 案/宏村 TODO 案两撞）；模板残留只可能出现在
+# 可见文本层，剥离只会减误报不会漏真报。
+t_visible = re.sub(r'data:image/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+', '', t)
 ph_hits = {}
 for ph in ["__CITY__", "【目的地】", "TODO", "Lorem"]:
-    n = t.count(ph)
+    n = t_visible.count(ph)
     if n:
         ph_hits[ph] = n
 if ph_hits:
@@ -173,9 +246,9 @@ if mqs and ".tb" in t:
     if any("table-layout:fixed" in b for b in mqs):
         addp("移动端表格布局", "fixed 已配（colgroup 按列型在成品层）")
     else:
-        addw("移动端表格布局", "媒体查询无 table-layout:fixed——手机窄屏表格列宽失衡竖排风险（实机竖排案例）；老成品可人工放行待升级")
+        addw("移动端表格布局", "媒体查询无 table-layout:fixed——手机窄屏表格列宽失衡竖排风险（山东 10/10 案）；老成品可人工放行待升级")
 
-# ---------- 6.6 导航「今天」重复标记（v1.4：正文徽章已承担今日标识，导航禁再挂） ----------
+# ---------- 6.6 导航「今天」重复标记（v1.4，2026-10-10 实战定性——正文徽章已承担今日标识，导航禁再挂） ----------
 if "navA.innerHTML" in t:
     addw("导航今天标记", "script 含 navA.innerHTML 当日文字/圆点注入——导航重复标识已废止（v3.64）应删；今日标识由正文 today-badge 承担")
 else:
@@ -220,7 +293,7 @@ else:
 # ---------- 7e. 存储键跨成品污染（山东版 tky_font=东京键名案） ----------
 lkeys = sorted(
     set(m.group(2) for m in re.finditer(r"localStorage\.\w+\((['\"])([\w-]+)\1", t))
-    # v1.5：补抓「前缀拼接形态」键——tky_chk_ 曾以字符串常量藏在 script 里漏检（font 键与 chk 键双形态盲区案）
+    # v1.5：补抓「前缀拼接形态」键——tky_chk_ 曾以字符串常量藏在 script 里漏检（山东版 10/10 双窗合并仲裁案：font 键修了 chk 键没修=双键盲区）
     | set(m.group(1) for m in re.finditer(r"['\"](\w{2,5}_(?:chk|font)[\w-]*)['\"]", t))
 )
 KNOWN_CITY = {"tky": "东京", "hl": "檀香山", "mnl": "马尼拉", "chongqing": "重庆",
@@ -249,7 +322,7 @@ if long_bracket:
 else:
     addp("【】指引残留", "无")
 
-# ---------- 7g. 必答清单关键词抽查（v1.2：必答清单机器兜底，） ----------
+# ---------- 7g. 必答清单关键词抽查（v1.2，实战反馈：不希望再出现老问题） ----------
 def _sec_txt(sid):
     m = re.search(r'<section id="' + sid + r'".*?</section>', t, re.S)
     if not m:
@@ -292,7 +365,7 @@ if checks_7g:
 else:
     addp("必答抽查", "住宿店名/升级体验/雨天/隐藏成本/医疗/必办 六件全在位")
 
-# ---------- v1.6 形态检查组（2026-10-12 多册实机检查反哺） ----------
+# ---------- v1.6 形态检查组（2026-10-12 桂林册夜四连打回反哺） ----------
 mor = []
 # ① eyebrow 措辞白名单（v3.57 正本集 ∪ 老成品历史口径——新口径优先，老口径放行老成品）
 EB_WHITELIST = {"总览", "路程", "备选 · 想多玩这样加", "门票 · 预约", "真实场景 · 提前知道", "住宿", "预算", "应急",
@@ -302,7 +375,7 @@ for eb in re.findall(r'class="eyebrow">([^<]*)<', t):
     eb = eb.strip()
     if eb and eb not in EB_WHITELIST:
         mor.append((f"eyebrow 自创「{eb[:20]}」", "v3.57 正本=武汉式主题词·补充语（正本集见 checklist 源码 EB_WHITELIST），自创措辞=执行偏差"))
-# ② 冷知识卡逐日（v3.58 固定件）
+# ② 冷知识卡逐日（v3.58 固定件：实战定规「以后的路书都要保留」）
 day_secs = re.findall(r'<section id="day\d+">.*?</section>', t, re.S)
 no_kn = [i + 1 for i, d in enumerate(day_secs) if "你知道吗" not in d]
 if day_secs and no_kn:
@@ -318,15 +391,15 @@ if tt is not None and "拍摄参数速查卡" not in tt:
 bad_nav = [h for h in re.findall(r'<a href="#day\d+"[^>]*>([^<]*)</a>', t) if not re.match(r"第 \d+ 天 · ", h.strip())]
 if bad_nav:
     mor.append((f"nav 格式违规 {len(bad_nav)} 处", f"v3.27 导航族=「第 N 天 · 主题」两字短名式；实测样本: {bad_nav[:2]}（D1 代号=偷懒替换骨架占位符案）"))
-# ⑥ eat 表头备选列（每餐 2 家口径）
+# ⑥ eat 表头备选列（每餐 2 家，09-25 打回「只给 1 家=偏少」）
 if et is not None and "备选" not in et:
-    mor.append(("美食表无备选列", "每餐主推+备选 ≥2 家"))
+    mor.append(("美食表无备选列", "每餐主推+备选 ≥2 家（09-25 打回单店案）"))
 # ⑦ figcaption（示意）双写
 if re.search(r"（示意）[^<]*（示意）", t):
     mor.append(("figcaption「（示意）」双写", "嵌入脚本 mark+cap 双带示意标记案——渲染出「（示意）xxx（示意）」"))
-# ⑧ 尾部占位（tailpad 防呆）
+# ⑧ 尾部占位（移动端工具条遮挡，镇江 9/10 老坑）
 if VISUAL and "tailpad" not in t:
-    mor.append(("缺尾部工具条占位", "移动端底部工具条会遮挡正文最后一行——内容尾部加 height:96px 占位"))
+    mor.append(("缺尾部工具条占位", "移动端底部工具条遮挡正文最后一行（镇江 9/10 老坑）——内容尾部加 height:96px 占位"))
 if mor:
     addf("形态检查", "；".join(n for n, _ in mor) + " —— 对照 skill 形态条款逐项修（老成品跑 v1.6 报 ②③④⑥⑧ 按惯例人工放行）")
 else:
@@ -358,7 +431,7 @@ if VISUAL:
         with sync_playwright() as p:
             browser = p.chromium.launch(channel="msedge", headless=True)
             url = "file:///" + os.path.abspath(PATH).replace("\\", "/")
-            for w, h, tag in [(1280, 900, "桌面"), (390, 844, "手机")]:
+            for w, h, tag in [(1280, 900, "桌面1280"), (768, 1024, "平板768"), (390, 844, "手机390"), (320, 568, "小屏320")]:
                 pg = browser.new_page(viewport={"width": w, "height": h})
                 errs = []
                 pg.on("pageerror", lambda e: errs.append(str(e)))
@@ -420,6 +493,30 @@ print("\n" + "=" * 46)
 print(f"结果: {len(results)} 项 | FAIL {n_fail} | WARN {n_warn} | SKIP {n_skip}")
 if n_fail:
     print("🔴 有 FAIL —— 不许交稿，修复后重跑。")
+    # ---------- 修复指引（v1.9a，Gemini 方案增量②：局部修补替代推倒重来——每 FAIL 项给「修哪」提示） ----------
+    FIX_HINTS = {
+        "区块完备": "缺哪个区块补哪个 section；只补缺件，禁全文重写",
+        "天数前置校验": "核对行程天数与 day 区块数量；跳号=补缺失 day 或改编号",
+        "每日餐行": "在缺失餐段词的 slot 标题/正文补「早餐/午餐/晚餐」字面词——只改对应 slot",
+        "slot 时间线": "乱序=调换 slot 顺序；重复餐段=改其中一行的餐段词或合并——只动涉及行",
+        "动线图出界": "扩 bbox 重拼底图（覆盖路径全程）或裁剪出界点——禁手调坐标数字",
+        "每日配图对称律": "缺图日补到 2 或 4 张（禁 3）；只补缺图日",
+        "必答抽查": "按提示缺失件逐块补——只补缺失项，已过项不动",
+        "形态检查": "按列出的形态项逐项修——只修列出的",
+        "nav==DOM 顺序": "调整 nav 链接顺序与 DOM 一致——只动 nav",
+        "占位符": "grep 残留【】替换为实际内容——逐处替换",
+    }
+    hinted = []
+    for mark, name, detail in results:
+        if mark == "FAIL":
+            for k, v in FIX_HINTS.items():
+                if k in name:
+                    hinted.append(f"  🛠 {name} → {v}")
+                    break
+            else:
+                hinted.append(f"  🛠 {name} → 定位到具体区块/字段局部修正，禁推倒重写全篇")
+    print("🛠 修复指引（局部修补，禁推倒重来——同 FAIL 连续 3 轮未消→按熔断条款停手降级声明）:")
+    print("\n".join(hinted))
     sys.exit(1)
 if n_skip:
     print("🟡 有 SKIP（未执行的检查）——交稿时必须向用户声明哪些检查未跑。")
@@ -427,3 +524,20 @@ if n_warn:
     print("🟡 有 WARN —— 人工确认后可交稿，说明放行理由。")
 if not n_fail and not n_skip:
     print("🟢 全部通过，可交稿。")
+
+# ---------- 交付证据卡（v1.7，2026-10-15）：机械闸只证明机械项，判断项必须逐项填证据——空项=不交稿 ----------
+print()
+print("🧾 交付证据卡（执行者逐项填写，随产物交付；任一空项 = 未达交付标准，返工修复，不得交稿）")
+print("─" * 46)
+ev = [
+    ("1.家族对齐 diff", "与家族中最接近成品逐段 diff（数指标不算对比）；差异 N 处、修几处、不修的理由？"),
+    ("2.信息归位抽查", "抽 2-3 个高频信息（门票/防晒/预约类）grep 全文落区数——同一信息 ≥2 个叙事区整句重复=违规"),
+    ("3.配图逐张亲验", "配图 N 张导出验 N/N？图注落位对 ≠ 图内容对，两层分开验"),
+    ("4.双视口截图亲验", "桌面+手机各 ≥1 张真机视口截图；手机端工具条/遮挡/溢出重点看"),
+    ("5.通读去AI味", "标题+各板块通读一遍；grep 高频词（进行/值得注意/仿佛/为您/标志着…）N 处"),
+    ("6.脱敏逐词", "内部词 grep：博主名/平台内部ID/内部路径/称谓 = 0？朋友版与发布口径一致？"),
+]
+for k, q in ev:
+    print(f"□ {k}：{q}")
+print("─" * 46)
+print("填写格式：每项一行「✅/❌ + 证据（命令输出/计数/文件路径）」；❌ 或空 = 返工修复后重跑本闸。")
