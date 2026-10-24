@@ -1,0 +1,385 @@
+{
+ "schema_version": "1.0",
+ "meta": {
+  "title": "合成边界样本（虚构，勿入交付）",
+  "destination": "示例国",
+  "home_city": "示例市",
+  "date_window": {
+   "start": "2026-11-16",
+   "end": "2026-11-17"
+  },
+  "pax": {
+   "adults": 1,
+   "children": 0,
+   "note": "单人"
+  },
+  "tier": "standard",
+  "timezones": [
+   {
+    "area": "示例国",
+    "utc_offset": "+01:00",
+    "vs_home_hours": -7
+   }
+  ],
+  "fx": [
+   {
+    "base": "EUR",
+    "quote": "CNY",
+    "rate": 7.5,
+    "checked_at": "2026-10-16",
+    "source": "示例源"
+   }
+  ]
+ },
+ "tickets": [
+  {
+   "id": "t001",
+   "name": "示例古城联票",
+   "applicability": {
+    "date": "11-16",
+    "ticket_kind": "24h 联票",
+    "pax_scope": "成人",
+    "reservation": "必须",
+    "combo": "含示例广场一次入场"
+   },
+   "text": "首场 09:30 入场人最少（v1.2 作息示范）。",
+   "evidence": {
+    "price": {
+     "source": "示例官网",
+     "checked_at": "2026-10-16"
+    }
+   }
+  },
+  {
+   "id": "t002",
+   "name": "示例博物馆（票价待核）",
+   "applicability": {
+    "reservation": "建议"
+   },
+   "text": ""
+  }
+ ],
+ "stays": [
+  {
+   "id": "s001",
+   "name": "示例旅馆",
+   "applicability": {
+    "city": "示例城",
+    "area": "车站圈",
+    "checkin": "2026-11-16",
+    "checkout": "2026-11-18",
+    "nights": 2,
+    "room_type": "经济单间",
+    "pax": 1,
+    "breakfast": false
+   },
+   "text": ""
+  }
+ ],
+ "meals": [
+  {
+   "id": "m001",
+   "name": "示例披萨店",
+   "applicability": {
+    "day_no": 1,
+    "meal_type": "午餐",
+    "price_basis": "主菜+饮料 €13-18",
+    "area": "老城"
+   },
+   "text": ""
+  },
+  {
+   "id": "m002",
+   "name": "示例面馆（备选）",
+   "applicability": {
+    "day_no": 1,
+    "meal_type": "午餐",
+    "price_basis": "€10-15",
+    "area": "老城"
+   },
+   "text": ""
+  }
+ ],
+ "flights": [
+  {
+   "id": "f001",
+   "name": "XX0001 示例航空",
+   "applicability": {
+    "flight_no": "XX0001",
+    "dep": "浦东T1",
+    "arr": "示例机场T3",
+    "dep_time": "12:40",
+    "arr_time": "18:40",
+    "dep_date": "2026-11-16",
+    "crosses_days": false,
+    "duration_min": 780,
+    "arr_date": "2026-11-16",
+    "dep_utc_offset": "+08:00",
+    "arr_utc_offset": "+01:00"
+   },
+   "text": ""
+  }
+ ],
+ "transports": [
+  {
+   "id": "tr001",
+   "name": "示例机场快线",
+   "billing": {
+    "optional": true,
+    "reason": "示例费用样张省略（机场快线 40 元口径）"
+   },
+   "applicability": {
+    "mode": "机场快线",
+    "from": "示例机场",
+    "to": "中央车站",
+    "dep_window": "15-30 分钟一班",
+    "duration_note": "32 分钟"
+   },
+   "text": ""
+  }
+ ],
+ "misc": [
+  {
+   "id": "x001",
+   "name": "示例签证费",
+   "applicability": {
+    "category": "签证",
+    "note": "含服务费"
+   },
+   "text": ""
+  }
+ ],
+ "expenses": [
+  {
+   "id": "e001",
+   "ref": "f001",
+   "category": "机票",
+   "label": "国际机票往返",
+   "amount": 3000,
+   "currency": "CNY",
+   "unit": "每次",
+   "qty": 1,
+   "scope": {
+    "pax": 1,
+    "rooms": 0
+   },
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "已付",
+   "verify_status": "verified",
+   "checked_at": "2026-10-16",
+   "source": "示例票源"
+  },
+  {
+   "id": "e002",
+   "ref": "x001",
+   "category": "签证",
+   "label": "示例签证+服务费",
+   "amount": 100,
+   "currency": "EUR",
+   "unit": "每次",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "verified",
+   "checked_at": "2026-10-16",
+   "source": "示例使馆口径"
+  },
+  {
+   "id": "e003",
+   "ref": "t001",
+   "category": "门票",
+   "label": "示例古城联票",
+   "amount": 18,
+   "currency": "EUR",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "verified",
+   "checked_at": "2026-10-16",
+   "source": "示例官网"
+  },
+  {
+   "id": "e004",
+   "ref": "t001",
+   "category": "门票",
+   "label": "示例广场（含于联票）",
+   "amount": 9,
+   "currency": "EUR",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "verified",
+   "inclusion": {
+    "included_in": "e003",
+    "note": "联票已含，防重复计"
+   },
+   "checked_at": "2026-10-16",
+   "source": "示例官网"
+  },
+  {
+   "id": "e005",
+   "ref": "s001",
+   "category": "住宿",
+   "label": "示例旅馆 2 晚",
+   "amount": 80,
+   "currency": "EUR",
+   "unit": "每间夜",
+   "qty": 2,
+   "scope": {
+    "pax": 1,
+    "rooms": 1
+   },
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "verified",
+   "checked_at": "2026-10-16",
+   "source": "示例预订平台区间中值"
+  },
+  {
+   "id": "e006",
+   "ref": "m001",
+   "category": "餐饮",
+   "label": "餐饮 2 天",
+   "amount_min": 40,
+   "amount_max": 60,
+   "currency": "EUR",
+   "unit": "每天",
+   "qty": 2,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-10-16",
+   "source": "示例淡季口径"
+  },
+  {
+   "id": "e007",
+   "ref": "m002",
+   "category": "餐饮",
+   "label": "备选：示例面馆",
+   "amount": 50,
+   "currency": "EUR",
+   "unit": "每次",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "备选",
+   "pay_status": "待付",
+   "verify_status": "verified",
+   "checked_at": "2026-10-16",
+   "source": "示例"
+  },
+  {
+   "id": "e008",
+   "ref": "t002",
+   "category": "门票",
+   "label": "示例博物馆（票价待核）",
+   "amount": 15,
+   "currency": "EUR",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "pending",
+   "checked_at": "2026-10-16",
+   "source": "口径未逐字核"
+  },
+  {
+   "id": "e009",
+   "category": "杂项",
+   "label": "示例导览（净价+税）",
+   "amount": 100,
+   "currency": "EUR",
+   "unit": "每次",
+   "qty": 1,
+   "price_mode": "净价+税",
+   "tax_rate": 0.25,
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "verified",
+   "checked_at": "2026-10-16",
+   "source": "示例"
+  }
+ ],
+ "days": [
+  {
+   "day": 1,
+   "date": "11-16",
+   "weekday": "一",
+   "city": "示例城",
+   "theme": "抵达",
+   "slots": [
+    {
+     "id": "d1s1",
+     "t": {
+      "tr_ref": "f001",
+      "field": "dep_time"
+     },
+     "type": "flight",
+     "ref": "f001",
+     "text": "XX0001 抵达"
+    },
+    {
+     "id": "d1s2",
+     "t": "18:40",
+     "type": "transport",
+     "ref": "tr001",
+     "text": "机场快线进城"
+    },
+    {
+     "id": "d1s3",
+     "t": "20:00",
+     "type": "spot",
+     "text": "夜色示例广场"
+    }
+   ],
+   "meals": {
+    "早餐": null,
+    "午餐": null,
+    "晚餐": null
+   },
+   "stay": {
+    "ref": "s001"
+   },
+   "cam": [],
+   "knowhow": "",
+   "planb": ""
+  },
+  {
+   "day": 2,
+   "date": "11-17",
+   "weekday": "二",
+   "city": "示例城",
+   "theme": "古城日",
+   "slots": [
+    {
+     "id": "d2s1",
+     "t": "09:30",
+     "type": "spot",
+     "text": "示例古城首场"
+    }
+   ],
+   "meals": {
+    "早餐": null,
+    "午餐": {
+     "ref": "m001"
+    },
+    "晚餐": null
+   },
+   "stay": {
+    "ref": "s001"
+   },
+   "cam": [],
+   "knowhow": "",
+   "planb": ""
+  }
+ ],
+ "assets": []
+}

@@ -1,20 +1,14 @@
 <div align="center">
 
-<img src="preview/hero.jpg" width="680" alt="武汉 5 天 4 晚路书成品（桌面 + 导览图 + 手机）">
+# 见好 · 旅行路书
 
-# 见好 · 旅行规划器
+**让 AI 按统一流程查资料、排行程，制作可在手机和电脑查看的旅行路书。**
 
-**联网实查、可核验的出行路书工作流** —— 一句话需求，产出断网可开的单文件 HTML 路书
+<sub><a href="#这是什么">📖 开始使用</a> · <a href="preview/hero.jpg">🖼 看成品示例</a> · <a href="https://github.com/awangwang123/jianhao-travel-planner/releases">⬇️ 下载稳定版</a> · <a href="https://github.com/awangwang123/jianhao-travel-planner/issues">❓ 遇到问题</a> · <a href="TUTORIAL.md">零基础教程</a></sub>
 
-<sub>桌面 / 手机 / 打印三好看 · 实拍配图 + 手绘导览图 · 行程 / 路程 / 门票 / 提示 / 住宿 / 预算 / 应急 / 美食 / 特产 十大板块</sub>
+<img src="preview/hero.jpg" width="680" alt="路书成品（桌面 + 导览图 + 手机）">
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
-![输出](https://img.shields.io/badge/输出-单文件_HTML-ff7a59?style=flat-square)
-![断网](https://img.shields.io/badge/断网-可读-22c55e?style=flat-square)
-![配图](https://img.shields.io/badge/配图-真实实拍-8b5cf6?style=flat-square)
-![API](https://img.shields.io/badge/付费_API-不需要-0ea5e9?style=flat-square)
-
-<sub><a href="#这是什么">这是什么</a> · <a href="#你能得到什么">能得到什么</a> · <a href="#一份路书里有什么">路书板块</a> · <a href="#触发词">触发词</a> · <a href="#安装2-分钟">安装</a> · <a href="#版本">版本</a> · <a href="TUTORIAL.md">📖 零基础教程</a> · <a href="https://github.com/awangwang123/jianhao-travel-planner/discussions/1">📍 城市许愿池</a></sub>
+<sub>开源技能包，需配合 AI 助手使用 · 统一模板 · 事实核查流程 · 机械检查工具 · MIT</sub>
 
 </div>
 
@@ -36,13 +30,7 @@
 - 🍜 **吃饭有章法**：推荐店各归各位，照抄照选两相宜
 - 🚫 **隐私干净**：对外内容零敏感残留
 - 🍱 **美食情报卡**：按城市持续追加的数据资产，越用越厚
-- ✅ **交付可验收**：内置 `tools/checklist.py` 机械检查（11 项），AI 交稿前必跑——你也能一键验收 AI 有没有偷懒
-
-## 上线反响
-
-![抖音数据](preview/douyin.jpg)
-
-<sub>开源次日的抖音介绍视频：12.6 万播放 · 2889 收藏（数据截至 2026-09-30）</sub>
+- ✅ **交付可验收**：内置 `tools/checklist.py` 机械检查清单（随版本演进，以工具输出为准），AI 交稿前必跑——你也能一键验收 AI 有没有偷懒。注意：机械检查通过 ≠ 关键事实（交通/票务/价格）已核验，出行前请按路书内的核实状态标注复核
 
 ## 一份路书里有什么
 
@@ -117,15 +105,35 @@ jianhao-travel-planner/
 
 > ⚠️ **已有同名包？** 如果 skills 目录里已存在 `jianhao-travel-planner` 文件夹，本包拷入会覆盖它（作者的自用版叫 `travel-planner`，不同名、不受影响）。
 
-## 配图（可选，不配也能交付）
+## 配图（图源与 API key 可选，成品每日配图是硬要求）
 
-路书要求"每天都有图"。图源任选其一：
+路书要求"每天都有图"——**不配图过不了交付自查清单第⑱项**；但**配图渠道完全可选**，任选其一即可满足：
 
 1. **Wikimedia Commons**（默认图源，免费免 key）：按「地标名」精准检索实拍照片，挑近期真实照片用；若在你的网络环境不可达，skill 自动改用下一级图源，不影响出图
-2. **Pexels**（免费可商用）：pexels.com 免费注册 → 申请 API key → 存本机 `.env`（`PEXELS_API_KEY=你的key`）或环境变量，适合氛围空镜
+2. **Pexels**（免费可商用，需注册 API key）：key 存本机 `.env`（`PEXELS_API_KEY=你的key`）或环境变量，适合氛围空镜——**key 只是图源之一的选择项，没有它走默认图源即可**
 3. **AI 生图**：用自己的生图工具产「（示意）」图——页脚注明「AI 生成示意」即可
 
-不配图过不了交付自查清单第⑱项；非实拍图标注「（示意）」、页脚写明来源即可。
+非实拍图标注「（示意）」、页脚写明来源即可。
+
+## 稳定版下载
+
+不想折腾安装？[Releases 页](https://github.com/awangwang123/jianhao-travel-planner/releases)提供打包好的稳定版 zip（含技能规范与全部工具）；主分支为最新开发态，两者可能不同步——**使用以 Releases 为准**。
+
+## 工具模式（不装 skill，直接用生成工具链）
+
+v1.17 起随包提供完整生成工具链——不想让 AI 走整套技能流程的话，也可以按 `schema.md` 填写 `trip_data.json`（可交给任意 AI 按 schema 代填），然后机械四步：
+
+```bash
+py tools/validate_trip_data.py 你的trip_data.json      # 数据闸（V01-V22：引用/枚举/日期对齐/费用三态/时刻单源等）
+py tools/gen_roadbook.py 你的trip_data.json 路书.html   # 生成（骨架指纹校验，天数自适应）
+py tools/checklist.py 路书.html --visual               # 成品检查（FAIL 清零才交付）
+py tools/apply_routes.py 你的trip_data.json 路书.html   # （有 routes 时）导览图注入
+```
+
+- 演示样本：`fixtures/good_full.json`（校验演示）；`fixtures/synth/`（3/8/10 天合成册，`py fixtures/make_synth_books.py` 可重新生成）
+- 回归测试（合成数据，不含真实目的地信息）：`py tools/test_synth_regression.py`；出境格式：`py tools/test_abroad.py`
+- 出境样本：`fixtures/synth_abroad_sample.json`（跨日红眼/时区/双币种）
+- 依赖：仅 Python 3.8+ 标准库；`checklist.py --visual` 的视觉检查可选装 Playwright（缺失自动 SKIP 声明）
 
 ## 第一次使用前
 
@@ -146,9 +154,17 @@ jianhao-travel-planner/
 
 </details>
 
+## 上线反响
+
+![抖音数据](preview/douyin.jpg)
+
+<sub>开源次日的抖音介绍视频：12.6 万播放 · 2889 收藏（数据截至 2026-09-30）</sub>
+
+
 ## 版本
 
-- **v1.16**（2026-10-24）：checklist 同步作者版 v1.10 三项（slot 属性形态兼容 / 0 样本 fail-closed / 餐段窗口收紧）；作息默认节奏条文化（默认 09:30—10:00 开始游玩，不写起床细节）
+- **v1.17**（2026-10-24）：**工具链公开化**——生成器/数据校验器/导览图程序化/事实派生等八件工具与 schema/骨架/合成样本随包发布，新增「工具模式」四步机械全链；教程与 README 承诺修正（耗时/助手能力/检查边界/配图边界）
+- **v1.16**（2026-10-24）：修复部分页面无法识别行程时段的问题；未读取到时段时明确报错不漏检；减少餐段重复识别误报；作息默认节奏条文化（默认 09:30—10:00 开始游玩，不写起床细节）。**稳定版下载走 [Releases 页](https://github.com/awangwang123/jianhao-travel-planner/releases)（v1.16 起 zip 随 Release 发布）；主分支为最新开发态，两者可能不同步，以 Releases 为准**
 - **v1.15**（2026-10-21）：问题反馈模板适配双路线——报错单不再绑定 Claude Code，任意 AI 助手用户可顺填报错，新增「你用的 AI 助手」排查字段
 - **v1.14**（2026-10-19）：**出境能力包正式收录**——实查通路三层级/签证体检卡/出入境双清单/双币种+含税实付/sos 领保块/装备卡/热门未排取舍说明（新节「出境册附加条款」）；checklist.py 同步 v1.9（24 项机械闸+修复指引+出界断言）；新工具 basemap_tool.py（真底图工具链）+prep_fetch.py（日照/汇率/坐标预抓）；新节「提速·导览图·验收增补」——提速五条/导览图六条+总览比例家族基准/验收规范一页纸/三档位/价格复用边界
 - **v1.13**（2026-10-15）：开工前置闸——SKILL.md 速查卡+阶段 0 新增「出发地/日期窗/人数与关系禁默认+需求确认单」条款（根治他环境"零提问默认北京出发"实测事故）；禁止 AI 摘要改写 SKILL.md（93KB 正文被改造成附录的实测教训）；导览图双通路定序——手绘 SVG=无网无 key 兜底正路硬执行；README 新增「任意 AI 助手通用安装法」+ 用户纠偏咒语 + 需求说全提示

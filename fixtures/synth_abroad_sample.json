@@ -1,0 +1,238 @@
+{
+ "schema_version": "1.1",
+ "meta": {
+  "title": "曼谷 2 天 · 出境合成测试样本",
+  "destination": "曼谷（泰国）",
+  "home_city": "武汉",
+  "city_code": "bkk",
+  "date_window": {
+   "start": "2026-12-10",
+   "end": "2026-12-11"
+  },
+  "pax": {
+   "adults": 1,
+   "children": 0
+  },
+  "tier": "standard",
+  "timezones": [
+   {
+    "area": "武汉",
+    "utc_offset": "+08:00",
+    "vs_home_hours": 0
+   },
+   {
+    "area": "泰国",
+    "utc_offset": "+07:00",
+    "vs_home_hours": -1
+   }
+  ],
+  "fx": [
+   {
+    "base": "THB",
+    "quote": "CNY",
+    "rate": 0.205,
+    "checked_at": "2026-12-01",
+    "source": "合成（聚合口径）"
+   }
+  ],
+  "budget_tail_note": "出境合成测试样本——非真实出行建议"
+ },
+ "tickets": [
+  {
+   "id": "t001",
+   "name": "大皇宫",
+   "text": "门票绑当日入场；8:30-15:30 售票（合成口径，购票时复核）",
+   "applicability": {"date": "12-11"}
+  }
+ ],
+ "stays": [
+  {
+   "id": "s001",
+   "name": "考山路旅馆",
+   "text": "D2 凌晨 05:30 落地后入住（跨日红眼航班的正确排法）"
+  }
+ ],
+ "meals": [
+  {
+   "id": "m001",
+   "name": "建兴酒家（暹罗店）",
+   "text": "合成样本"
+  }
+ ],
+ "flights": [
+  {
+   "id": "f001",
+   "name": "9C8761 武汉→曼谷",
+   "text": "D1 23:50 起飞——次日（D2）05:30 到达（红眼跨日，时区 +07:00）",
+   "applicability": {"flight_no": "9C8761", "dep_time": "23:50", "arr_time": "05:30",
+                     "duration_min": 400, "crosses_days": true,
+                     "dep_tz_area": "武汉", "arr_tz_area": "泰国",
+                     "dep_date": "2026-12-10", "arr_date": "2026-12-11"}
+  }
+ ],
+ "transports": [],
+ "misc": [
+  {
+   "id": "x001",
+   "name": "泰国签证费（合成口径）"
+  }
+ ],
+ "expenses": [
+  {
+   "id": "e001",
+   "ref": "f001",
+   "category": "机票",
+   "label": "武汉→曼谷单程",
+   "amount": 850,
+   "currency": "CNY",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-12-01",
+   "source": "合成"
+  },
+  {
+   "id": "e002",
+   "ref": "t001",
+   "category": "门票",
+   "label": "大皇宫",
+   "amount": 500,
+   "currency": "THB",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "verified",
+   "checked_at": "2026-12-01",
+   "source": "合成"
+  },
+  {
+   "id": "e003",
+   "ref": "s001",
+   "category": "住宿",
+   "label": "考山路旅馆 1 晚",
+   "amount": 900,
+   "currency": "THB",
+   "unit": "每间夜",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-12-01",
+   "source": "合成"
+  },
+  {
+   "id": "e004",
+   "ref": "x001",
+   "category": "杂项",
+   "label": "签证费",
+   "amount": 250,
+   "currency": "CNY",
+   "unit": "每次",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-12-01",
+   "source": "合成"
+  },
+  {
+   "id": "e005",
+   "ref": "m001",
+   "category": "餐饮",
+   "label": "建兴酒家午餐",
+   "amount": 150,
+   "currency": "THB",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-12-01",
+   "source": "合成"
+  }
+ ],
+ "days": [
+  {
+   "day": 1,
+   "date": "12-10",
+   "weekday": "四",
+   "city": "曼谷",
+   "theme": "红眼航班出发",
+   "slots": [
+    {
+     "id": "d1s1",
+     "t": "20:00",
+     "type": "note",
+     "text": "天河机场集合（红眼航班，D2 凌晨才到曼谷）"
+    },
+    {
+     "id": "d1s2",
+     "t": {"tr_ref": "f001", "field": "dep_time"},
+     "type": "flight",
+     "ref": "f001",
+     "text": "9C8761 起飞——次日 {arr} 到"
+    }
+   ],
+   "meals": {
+    "早餐": null,
+    "午餐": null,
+    "晚餐": {
+     "ref": "m001",
+     "note": "机场简餐（合成）"
+    }
+   },
+   "stay": null,
+   "cam": [],
+   "knowhow": "跨日航班：起飞与到达分属两日",
+   "planb": ""
+  },
+  {
+   "day": 2,
+   "date": "12-11",
+   "weekday": "五",
+   "city": "曼谷",
+   "theme": "落地·大皇宫",
+   "slots": [
+    {
+     "id": "d2s1",
+     "t": {"tr_ref": "f001", "field": "arr_time"},
+     "type": "flight",
+     "ref": "f001",
+     "text": "{arr} 到达曼谷（时区 +07:00）→入住考山路"
+    },
+    {
+     "id": "d2s2",
+     "t": "10:00",
+     "type": "spot",
+     "ref": "t001",
+     "text": "大皇宫（绑当日门票）"
+    }
+   ],
+   "meals": {
+    "早餐": null,
+    "午餐": {
+     "ref": "m001"
+    },
+    "晚餐": null
+   },
+   "stay": {
+    "ref": "s001"
+   },
+   "cam": [
+    {
+     "scope": "day"
+    }
+   ],
+   "knowhow": "",
+   "planb": ""
+  }
+ ]
+}

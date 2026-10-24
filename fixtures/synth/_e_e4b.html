@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="jianhao-travel-planner · 基准骨架 · 指纹 9f1fd4856f">
+<title>合成测试 4 天 · P3 渲染 v0.2</title>
+<script>document.documentElement.classList.add('js');</script>
+<style>
+:root{
+  --bg:#F7F5F0; --surface:#FCFBF7; --ink:#1C1B17; --ink2:#5C594E; --ink3:#8A8677;
+  --line:#E3DFD3; --accent:#2F5D43; --accent-soft:#E6EEE8; --on-accent:#F7F5F0;
+  --warn:#8A6D1F; --warn-soft:#F3EEDF;
+  --red:#b5493a; --gold:#c8a45c;
+  --radius:14px; --fs:19px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:var(--fs)}
+body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;line-height:1.8;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:var(--on-accent)}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:var(--on-accent);padding:8px 16px;z-index:99;border-radius:0 0 8px 0;font-size:.8rem}
+.skip:focus{left:0}
+
+/* ---------- 左侧栏 ---------- */
+.side{position:fixed;inset:0 auto 0 0;width:236px;overflow-y:auto;background:#F2EEE3;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:28px 22px;z-index:10}
+.logo{font-size:1.15rem;font-weight:800;letter-spacing:.02em}
+.logo span{color:var(--accent)}
+.logo-sub{font-size:.58rem;letter-spacing:.2em;color:var(--ink3);margin-top:4px;text-transform:uppercase}
+.nav-group{margin-top:26px}
+.nav-label{font-size:.6rem;letter-spacing:.2em;color:var(--ink3);text-transform:uppercase;margin-bottom:8px;padding-left:12px}
+.side nav a{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:9px;font-size:.82rem;color:#4A473E;transition:background .2s,color .2s;margin-bottom:2px}
+.side nav a:hover{background:#E8E3D4;color:var(--ink)}
+.side nav a.on{background:var(--accent);color:var(--on-accent);font-weight:600;box-shadow:0 3px 10px rgba(47,93,67,.25)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none;animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.side-foot{margin-top:auto;font-size:.66rem;color:var(--ink3);border-top:1px solid var(--line);padding-top:14px;line-height:2}
+
+/* ---------- 主区 ---------- */
+main{margin-left:236px}
+.wrap{max-width:860px;margin:0 auto;padding:0 44px}
+section{padding:64px 0;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:none}
+.eyebrow{font-size:.62rem;letter-spacing:.24em;color:var(--accent);text-transform:uppercase;font-weight:600;margin-bottom:12px}
+h1{font-size:clamp(1.7rem,4vw,2.5rem);line-height:1.35;font-weight:800;max-width:16em}
+h2{font-size:clamp(1.45rem,2.7vw,1.95rem);line-height:1.35;font-weight:800}
+.lead{color:var(--ink2);margin-top:12px;max-width:34em}
+
+/* ---------- 通用卡片/标签/表格 ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px;margin-bottom:14px}
+.tag{display:inline-block;font-size:.66rem;padding:3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:600;margin-left:8px;vertical-align:middle}
+.tag.dim{background:transparent;border:1px solid var(--line);color:var(--ink3);font-weight:400}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+strong{color:var(--ink)}
+table.tb{width:100%;border-collapse:collapse;margin-top:14px;font-size:.85rem;background:var(--surface);border-radius:var(--radius);overflow:hidden;border:1px solid var(--line)}
+.tb th{background:#F2EEE3;text-align:left;padding:10px 12px;font-size:.78rem;color:var(--ink2);border-bottom:1px solid var(--line);white-space:nowrap}
+.tb td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:top}
+.tb tr:last-child td{border-bottom:none}
+.tb td b{color:var(--ink)}
+
+/* ---------- 天气 ---------- */
+.weather{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:26px}
+.wday{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center}
+.wday .d{font-size:.7rem;color:var(--ink3)}
+.wday .w{font-size:.82rem;font-weight:700;margin-top:4px}
+.wday .t{font-size:.7rem;color:var(--ink2);margin-top:3px}
+
+/* ---------- 清单（可勾选） ---------- */
+.check{list-style:none;margin-top:16px}
+.check li{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--surface);cursor:pointer;transition:background .2s}
+.check li:hover{border-color:var(--accent)}
+.check li.done{background:var(--accent-soft)}
+.check li.done .ct{text-decoration:line-through;color:var(--ink3)}
+.check input{width:22px;height:22px;margin-top:2px;accent-color:var(--accent);flex:none;cursor:pointer}
+.check .ct{font-size:.92rem}
+.check li.hot{border:2px solid var(--warn);background:var(--warn-soft)}
+.check li.hot .ct b{color:#6B5A22}
+
+/* ---------- 每日照片 ---------- */
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px}
+.photos.single{grid-template-columns:1fr;max-width:340px;margin-left:auto;margin-right:auto}
+@media (max-width:900px){.photos{grid-template-columns:1fr}.photos.single{max-width:100%}}
+.photos figure{margin:0}
+.photos img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:10px;display:block;border:1px solid var(--line)}
+.photos.single img{aspect-ratio:auto;object-fit:contain}
+.photos figcaption{font-size:.68rem;color:var(--ink3);margin-top:5px;line-height:1.5}
+
+/* ---------- 每日 ---------- */
+.day{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px;scroll-margin-top:20px}
+.day.today{border:2px solid var(--accent);box-shadow:0 6px 24px rgba(47,93,67,.14)}
+.day-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:16px}
+.day-idx{font-size:.62rem;letter-spacing:.14em;color:var(--ink3)}
+.day-head h3{font-size:1.15rem;font-weight:800}
+.today-badge{display:none;font-size:.7rem;padding:4px 12px;border-radius:99px;background:var(--accent);color:var(--on-accent);font-weight:700;align-items:center;gap:6px}
+.day.today .today-badge{display:inline-flex}
+.slot{display:grid;grid-template-columns:96px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
+.slot:last-of-type{border-bottom:none}
+.slot-time{font-size:.78rem;font-weight:700;color:var(--accent);padding-top:2px}
+.slot-body{font-size:.9rem;color:var(--ink2)}
+.slot-body b,.slot-body strong{color:var(--ink);font-weight:700}
+.note-row{display:flex;gap:10px;margin-top:10px;padding:12px 14px;border-radius:10px;background:var(--accent-soft);font-size:.84rem;color:var(--ink2);align-items:flex-start}
+.note-row.photo{background:#EDF0E6}
+.note-row .ic{flex:none}
+.warn-line{margin-top:10px;padding:12px 14px;border-radius:10px;background:var(--warn-soft);font-size:.84rem;color:#6B5A22}
+
+/* ---------- 数据（预算） ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px 14px}
+.stat .n{font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .l{font-size:.72rem;color:var(--ink2);margin-top:3px}
+
+/* ---------- 提示 ---------- */
+.tips{counter-reset:tip;margin-top:16px}
+.tip{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.tip:last-child{border-bottom:none}
+.tip::before{counter-increment:tip;content:counter(tip);width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:.85rem;text-align:center;line-height:34px}
+.tip p{font-size:.9rem;color:var(--ink2);padding-top:5px}
+.sos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+.sos{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.sos h4{font-size:.95rem;margin-bottom:8px}
+.sos p{font-size:.82rem;color:var(--ink2)}
+
+/* ---------- 工具条/返回顶部 ---------- */
+.toolbar{position:fixed;top:18px;right:20px;z-index:20;display:flex;gap:8px}
+.tbtn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:.78rem;font-weight:700;color:var(--ink2);cursor:pointer;transition:all .2s}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.backtop{position:fixed;bottom:24px;right:20px;z-index:20;width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);border:none;font-size:1.1rem;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s;box-shadow:0 4px 14px rgba(47,93,67,.3)}
+.backtop.show{opacity:1;pointer-events:auto}
+
+/* ---------- 入场动效 ---------- */
+html.js section .card,html.js section .day,html.js section .tip,html.js .wday,html.js .sos{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+html.js section.in .card,html.js section.in .day,html.js section.in .tip,html.js section.in .wday,html.js section.in .sos{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  html.js section .card,html.js section .day,html.js section .tip,html.js .wday,html.js .sos{opacity:1;transform:none;transition:none}
+  html{scroll-behavior:auto}
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:900px){
+  html{font-size:calc(var(--fs) - 1px)}
+  body{padding-bottom:76px}
+  .side{position:static;width:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 14px;border-right:none;border-bottom:1px solid var(--line)}
+  .logo-sub,.side-foot{display:none}
+  .nav-group{margin:0;display:flex;gap:4px;flex-wrap:wrap}
+  .nav-label{display:block;flex:1 1 100%;font-size:.58rem;letter-spacing:.16em;color:var(--ink3);margin:2px 0 4px 2px}
+  .side nav a{padding:7px 10px;font-size:.76rem}
+  .nav-group--chips{margin-top:8px;display:grid;align-items:stretch;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:6px}
+  .nav-group--chips>.nav-label{grid-column:1/-1;margin:0 0 1px 2px}
+  .nav-group--chips a{margin:0;padding:8px 6px;font-size:.74rem;line-height:1.3;justify-content:center;text-align:center;border:1px solid var(--line);background:var(--surface);border-radius:8px}
+  .nav-group--chips a:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .nav-group--chips a.on{border-color:transparent}
+  main{margin-left:0}
+  .wrap{padding:0 18px}
+  section{padding:44px 0}
+  .weather{grid-template-columns:repeat(3,1fr)}
+  .stats{grid-template-columns:1fr 1fr}
+  .sos-grid{grid-template-columns:1fr}
+  .slot{grid-template-columns:76px 1fr;gap:10px}
+  .tb{font-size:.78rem;table-layout:fixed}
+  .tb th,.tb td{padding:8px 8px;word-break:break-word;overflow-wrap:anywhere}
+  .toolbar{top:auto;bottom:14px;left:14px;right:auto;flex-direction:row}
+  .tbtn{padding:7px 11px;font-size:.72rem;box-shadow:0 2px 8px rgba(0,0,0,.08);background:rgba(252,251,247,.92)}
+}
+
+/* ---------- 移动端表格列宽（colgroup）在桌面端还原 auto，桌面排版零变化 ---------- */
+@media (min-width:901px){.tb col{width:auto!important}}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .side,.toolbar,.backtop,.skip{display:none}
+  main{margin-left:0}
+  body{background:#fff;font-size:12pt}
+  .wrap{max-width:100%;padding:0}
+  section{padding:20px 0;page-break-inside:avoid}
+  .day{page-break-inside:avoid}
+  .card,.day,.tip,.wday,.sos{opacity:1;transform:none}
+  .check li.done .ct{text-decoration:none;color:var(--ink)}
+}
+
+/* ---------- 兼容层（宁波/丽水 共用，勿删） ---------- */
+b,strong{color:var(--ink)}
+.warn-line b{color:inherit}
+.tb td .intro{display:block;font-size:.78rem;color:var(--ink3);margin-top:3px;line-height:1.5}
+</style>
+<style>.pp{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}.pp figure{flex:1 1 calc(50% - 4px);min-width:0;margin:0}.pp figure:only-child{flex:1 1 100%}.pp img{max-width:100%;height:auto;display:block}@media(max-width:768px){.pp figure{flex-basis:100%}}</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+<div class="toolbar" role="group" aria-label="阅读工具">
+  <button class="tbtn" id="fontDec" aria-label="字号调小">A−</button>
+  <button class="tbtn" id="fontInc" aria-label="字号调大">A＋</button>
+  <button class="tbtn" id="printBtn" aria-label="打印这份路书">🖨 打印</button>
+</div>
+<aside class="side">
+  <div>
+    <div class="logo">合成城<span>.</span></div>
+    <div class="logo-sub">3 天 2 晚 · 2 人</div>
+  </div>
+  <nav aria-label="页面导航">
+    <div class="nav-group">
+      <div class="nav-label">行程</div>
+      <a href="#overview">总览</a>
+      <a href="#drive">路程</a>
+          <a href="#day1">第 1 天 · 第1天</a>
+      <a href="#day2">第 2 天 · 第2天</a>
+      <a href="#day3">第 3 天 · 第3天</a>
+      <a href="#boost">备选</a>
+    </div>
+    <div class="nav-group nav-group--chips">
+      <div class="nav-label">备忘</div>
+      <a href="#ticket">门票</a>
+      <a href="#tips">提示</a>
+      <a href="#stay">住宿</a>
+      <a href="#cost">预算</a>
+      <a href="#sos">应急</a>
+      <a href="#eat">美食</a>
+      <a href="#gift">特产</a>
+    </div>
+  </nav>
+  <div class="side-foot">
+    武汉出发 · 11-01~11-03<br>
+    2 人<br>
+    信息 2026-10-21实查
+  </div>
+</aside>
+<main id="main">
+  <div class="wrap">
+        <section id="overview">
+<p class="eyebrow">总览</p>
+<h1 style="font-size:2rem;margin:.2em 0 .3em">合成测试 4 天</h1>
+<p class="lead">合成城｜武汉 → 11-01~11-03｜2 成人</p>
+<p class="lead">时差 +08:00（无）｜汇率 CNY→CNY 1.000</p>
+<div class="warn-line">合成样张页（第 3 步回归产物，非真实出行）</div>
+<div class="weather">
+  <div class="wday"><div class="d">11-01</div><div class="w">晴</div><div class="t">10~18℃</div></div>
+  <div class="wday"><div class="d">11-02</div><div class="w">晴</div><div class="t">10~18℃</div></div>
+  <div class="wday"><div class="d">11-03</div><div class="w">晴</div><div class="t">10~18℃</div></div>
+</div>
+样张天气口径
+<div class="pp" style="display:flex;flex-wrap:wrap;gap:8px"><figure data-test='day-photo'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' alt='合成图'></figure></div>
+样张尾注
+样张尾注
+<div class="card" data-testid='synth-prep'>
+  <div class="eyebrow" style="margin-bottom:6px">出发前</div>
+  <p style="font-size:.9rem">样张引导</p>
+  <ul class="check">
+    <li class="hot"><input type="checkbox" id="sy_chk_1"><span class="ct">合成装备一</span></li>
+  </ul>
+  <p style="font-size:.9rem;margin-top:14px">样张尾部</p>
+</div>
+</section>
+        <section id="drive">
+<div class="eyebrow">路程</div>
+<h2>大交通（样张）</h2>
+<div style="overflow-x:auto"><table class="tb">
+  <colgroup><col style="width:30%"><col style="width:70%"></colgroup>
+  <thead><tr><th>段</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>武汉→合成城</td><td>样张高铁</td></tr>
+  </tbody>
+</table></div>
+<p>样张时差注</p>
+</section>
+        <section id="day1">
+<div class="day-head"><span class="day-idx">DAY 1 · 11-01</span><h3>合成城 · 第1天</h3><span class="today-badge">· 今天</span></div>
+<div class="note-row"><span class="ic">🧭</span><span><b>今日速览：</b>合成样张第 1 天速览</span></div>
+<svg viewBox='0 0 300 120' data-test='day-svg'><polyline points='20,90 120,60 200,75 270,30' fill='none' stroke='#c0392b' stroke-width='3'/><polygon points='270,30 260,36 272,42' fill='#c0392b' data-arrow='1'/></svg>
+<div class="pp"><figure data-test='day-photo'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' alt='合成图'></figure></div>
+<div class="slot" data-slot-id="d1s1"><div class="slot-time">09:40</div><div class="slot-body">早餐·合成宾馆</div></div>
+<div class="slot" data-ref="t001" data-slot-id="d1s2"><div class="slot-time">10:30</div><div class="slot-body"><b>合成景点1</b>：样张正文，含机位地点<div style="font-size:.78rem;color:var(--ink3);margin-top:6px">📷 位置：合成景点1｜时段：10:00-11:00 顺光｜拍法：样张拍法</div></div></div>
+<div class="slot" data-slot-id="d1s3"><div class="slot-time">14:00</div><div class="slot-body"><b>合成看点1</b>：下午慢逛</div></div>
+<div class="slot" data-slot-id="d1s4"><div class="slot-time">18:00</div><div class="slot-body">晚餐·合成餐馆</div></div>
+<div class="note-row" style="background:var(--warn-soft)"><span class="ic">🛟</span><span><b>当日 Plan B：</b>样张应急</span></div>
+<div class="note-row"><span class="ic">💡</span><span><b>你知道吗：</b>合成冷知识 1</span></div>
+</section>
+        <section id="day2">
+<div class="day-head"><span class="day-idx">DAY 2 · 11-02</span><h3>合成城 · 第2天</h3><span class="today-badge">· 今天</span></div>
+<div class="note-row"><span class="ic">🧭</span><span><b>今日速览：</b>合成样张第 2 天速览</span></div>
+<svg viewBox='0 0 300 120' data-test='day-svg'><polyline points='20,90 120,60 200,75 270,30' fill='none' stroke='#c0392b' stroke-width='3'/><polygon points='270,30 260,36 272,42' fill='#c0392b' data-arrow='1'/></svg>
+<div class="pp"><figure data-test='day-photo'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' alt='合成图'></figure></div>
+<div class="slot" data-ref="tr002" data-slot-id="d2s0"><div class="slot-time">09:30</div><div class="slot-body">合成站→景区（样张交通）</div></div>
+<div class="slot" data-slot-id="d2s1"><div class="slot-time">09:40</div><div class="slot-body">早餐·合成宾馆</div></div>
+<div class="slot" data-ref="t002" data-slot-id="d2s2"><div class="slot-time">10:30</div><div class="slot-body"><b>合成景点2</b>：样张正文，含机位地点<div style="font-size:.78rem;color:var(--ink3);margin-top:6px">📷 位置：合成景点2｜时段：10:00-11:00 顺光｜拍法：样张拍法</div></div></div>
+<div class="slot" data-slot-id="d2s3"><div class="slot-time">14:00</div><div class="slot-body"><b>合成看点2</b>：下午慢逛</div></div>
+<div class="slot" data-slot-id="d2s4"><div class="slot-time">18:00</div><div class="slot-body">晚餐·合成餐馆</div></div>
+<div class="note-row" style="background:var(--warn-soft)"><span class="ic">🛟</span><span><b>当日 Plan B：</b>样张应急</span></div>
+<div class="note-row"><span class="ic">💡</span><span><b>你知道吗：</b>合成冷知识 2</span></div>
+</section>
+        <section id="day3">
+<div class="day-head"><span class="day-idx">DAY 3 · 11-03</span><h3>合成城 · 第3天</h3><span class="today-badge">· 今天</span></div>
+<div class="note-row"><span class="ic">🧭</span><span><b>今日速览：</b>合成样张第 3 天速览</span></div>
+<svg viewBox='0 0 300 120' data-test='day-svg'><polyline points='20,90 120,60 200,75 270,30' fill='none' stroke='#c0392b' stroke-width='3'/><polygon points='270,30 260,36 272,42' fill='#c0392b' data-arrow='1'/></svg>
+<div class="pp"><figure data-test='day-photo'><img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' alt='合成图'></figure></div>
+<div class="slot" data-ref="tr003" data-slot-id="d3s0"><div class="slot-time">09:30</div><div class="slot-body">合成站→景区（样张交通）</div></div>
+<div class="slot" data-slot-id="d3s1"><div class="slot-time">09:40</div><div class="slot-body">早餐·合成宾馆</div></div>
+<div class="slot" data-ref="t003" data-slot-id="d3s2"><div class="slot-time">10:30</div><div class="slot-body"><b>合成景点3</b>：样张正文，含机位地点<div style="font-size:.78rem;color:var(--ink3);margin-top:6px">📷 位置：合成景点3｜时段：10:00-11:00 顺光｜拍法：样张拍法</div></div></div>
+<div class="slot" data-slot-id="d3s3"><div class="slot-time">14:00</div><div class="slot-body"><b>合成看点3</b>：下午慢逛</div></div>
+<div class="slot" data-slot-id="d3s4"><div class="slot-time">18:00</div><div class="slot-body">晚餐·合成餐馆</div></div>
+<div class="note-row" style="background:var(--warn-soft)"><span class="ic">🛟</span><span><b>当日 Plan B：</b>样张应急</span></div>
+<div class="note-row"><span class="ic">💡</span><span><b>你知道吗：</b>合成冷知识 3</span></div>
+</section>
+        <section id="boost">
+<div class="eyebrow">锦上添花</div>
+<h2>加分项（样张）</h2>
+<p class="lead">样张口径</p>
+<div class="card">
+  <p style="font-size:.92rem">样张加分项一</p>
+  <p style="font-size:.92rem;margin-top:10px">样张加分项二</p>
+</div>
+</section>
+        <section id="ticket">
+<div class="eyebrow">门票</div>
+<h2>门票（样张）</h2>
+<p class="lead">样张口径</p>
+<div style="overflow-x:auto"><table class="tb">
+  <colgroup><col style="width:40%"><col style="width:20%"><col style="width:40%"></colgroup>
+  <thead><tr><th>景点</th><th>价格</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>合成景点1</td><td>100 元</td><td>样张门票</td></tr>
+    <tr><td>合成景点2</td><td>100 元</td><td>样张门票</td></tr>
+    <tr><td>合成景点3</td><td>100 元</td><td>样张门票</td></tr>
+  </tbody>
+</table></div>
+</section>
+        <section id="tips">
+<div class="eyebrow">提示</div>
+<h2>提示（样张）</h2>
+<p class="lead">样张口径</p>
+<div class="tips">
+  <div class="tip"><p>样张提示一</p></div>
+</div>
+</section>
+        <section id="stay">
+<div class="eyebrow">住宿</div>
+<h2>住宿（样张）</h2>
+<div style="overflow-x:auto"><table class="tb">
+  <colgroup><col style="width:30%"><col style="width:70%"></colgroup>
+  <thead><tr><th>晚</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>全程</td><td>合成宾馆（样张）</td></tr>
+  </tbody>
+</table></div>
+</section>
+        <section id="cost">
+<div class="eyebrow">心里有数</div>
+<h2>预算（主案口径）</h2>
+<p class="lead">口径=主案全链花销（不含购物与替代差额，替代见尾注）；金额为实查/估算，估算项逐条标注；自选项单列不进合计；1 人出行合计即人均。</p>
+<div class="stats" style="display:flex;flex-wrap:wrap;gap:8px">
+  <div class="stat"><div class="n">500~500</div><div class="l">合计 CNY（2 人分摊）</div></div>
+  <div class="stat"><div class="n">250~250</div><div class="l">人均 CNY</div></div>
+  <div class="stat"><div class="n">门票 300 元</div><div class="l">大头项</div></div>
+</div>
+
+<div style="overflow-x:auto"><table class="tb"><colgroup><col style="width:20%"><col style="width:15%"><col style="width:65%"></colgroup><tr><th>项</th><th>估算（CNY）</th><th>说明/来源</th></tr><tr><td>合成景点1</td><td>100</td><td style='font-size:.85rem'>synthetic</td></tr><tr><td>合成景点2</td><td>100</td><td style='font-size:.85rem'>synthetic</td></tr><tr><td>合成景点3</td><td>100</td><td style='font-size:.85rem'>synthetic</td></tr><tr><td>合成宾馆</td><td>200</td><td style='font-size:.85rem'>synthetic</td></tr></table></div>
+<p style="font-size:.86rem;color:var(--ink2);margin-top:12px"><b>自选另计</b>：样张自选：无——不进主线合计。</p>
+</section>
+        <section id="sos">
+<div class="eyebrow">应急</div>
+<h2>应急 · 样张</h2>
+<p class="lead">样张口径</p>
+<div class="sos-grid">
+  <div class="sos"><h4>🆘 紧急号码</h4><p>110/120（样张）</p></div>
+</div>
+</section>
+        <section id="eat">
+<div class="eyebrow">美食</div>
+<h2>吃什么（样张）</h2>
+<p class="lead">样张口径</p>
+
+<p style="font-weight:700;margin:12px 0 4px">Day1（样张）</p>
+<table class="tb"><colgroup><col style="width:30%"><col style="width:70%"></colgroup>
+<tr><th>餐</th><th>推荐</th></tr>
+<tr><td>晚餐</td><td>合成餐馆</td></tr>
+</table>
+
+<p style="font-weight:700;margin:12px 0 4px">必吃清单（样张）</p>
+<p style="font-size:.9rem;line-height:1.75">合成馆子一句话。</p>
+
+</section>
+        <section id="gift">
+<div class="eyebrow">手信</div>
+<h2>特产（样张）</h2>
+<div style="overflow-x:auto"><table class="tb">
+  <colgroup><col style="width:40%"><col style="width:60%"></colgroup>
+  <thead><tr><th>手信</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>合成糕点</td><td>样张条目</td></tr>
+  </tbody>
+</table></div>
+</section>
+        <!-- 探店情报原档（**仅自用版**）：section#intel + 情报卡 .ic-card + 侧栏导航项 + 独立样式表（第 2 块 <style>） -->
+        <section id="intel"></section>
+<footer style="padding:64px 0 80px;text-align:center">
+  <h2>合成城路书 · 合成测试 4 天</h2>
+  <p>武汉出发 · 11-01~11-03 · 2 人<br>本地单文件 · 无外部依赖 · 断网可打开<br>信息 2026-10-21联网实查 · 未核实项已标注</p>
+  <p>配图：Pexels+Wikimedia Commons 授权实拍（摄影师署名见各图注）；图源 Pexels / Wikimedia Commons<br>动线为 OSRM 真实路径示意，非等比例</p>
+  <p style="margin-top:18px;font-weight:700">方案仅供参考——安全和开心，才是最重要的。🌕</p>
+</footer>
+  </div>
+</main>
+<button class="backtop" id="backtop" aria-label="回到顶部">↑</button>
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- 1. 当日模式：按今天日期高亮对应行程日 ---------- */
+  var TRIP = { "2026-11-01":"day1", "2026-11-02":"day2", "2026-11-03":"day3" };
+  function todayStr(){
+    var d = new Date();
+    var m = ("0"+(d.getMonth()+1)).slice(-2), day = ("0"+d.getDate()).slice(-2);
+    return d.getFullYear()+"-"+m+"-"+day;
+  }
+  var todayId = TRIP[todayStr()];
+  if (todayId){
+    var sec = document.getElementById(todayId);
+    if (sec){
+      var card = sec.querySelector(".day");
+      if (card) card.classList.add("today");
+      function jumpToday(){ lockNav(todayId); sec.scrollIntoView({behavior:"instant", block:"start"}); }
+      /* 布局稳定后再跳（固定 600ms 会撞上 SVG/字体重排，落点漂移一整个区块——东京版实测） */
+      if (document.readyState === "complete"){ setTimeout(jumpToday, 300); }
+      else { window.addEventListener("load", function(){ setTimeout(jumpToday, 300); }); }
+    }
+  } else {
+    var prep = document.getElementById("prepCard");
+    if (prep && todayStr() < "2026-11-01") prep.style.border = "2px solid var(--accent)";
+  }
+
+  /* ---------- 2. 字号三档（记忆） ---------- */
+  var FONTS = ["17px","19px","21px"];
+  var fi = 1;
+  try { fi = Math.max(0, Math.min(2, parseInt(localStorage.getItem("sy_font")||"1",10)||0)); } catch(e){}
+  function applyFont(){ document.documentElement.style.setProperty("--fs", FONTS[fi]); }
+  applyFont();
+  function saveFont(){ try{ localStorage.setItem("sy_font", String(fi)); }catch(e){} }
+  document.getElementById("fontInc").addEventListener("click", function(){ if(fi<2){fi++;applyFont();saveFont();} });
+  document.getElementById("fontDec").addEventListener("click", function(){ if(fi>0){fi--;applyFont();saveFont();} });
+
+  /* ---------- 3. 打印 ---------- */
+  document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+
+  /* ---------- 4. 勾选清单（记忆） ---------- */
+  document.querySelectorAll(".check li").forEach(function(li, i){
+    var box = li.querySelector("input");
+    var key = "it_chk_" + box.id;
+    try { box.checked = localStorage.getItem(key) === "1"; } catch(e){}
+    if (box.checked) li.classList.add("done");
+    li.addEventListener("click", function(ev){
+      if (ev.target.tagName !== "INPUT"){ box.checked = !box.checked; }
+      li.classList.toggle("done", box.checked);
+      try{ localStorage.setItem(key, box.checked ? "1" : "0"); }catch(e){}
+    });
+  });
+
+  /* ---------- 5. 滚动监听：侧栏高亮 + 入场动效 ----------
+     高亮双通道：滚动 = 贴顶窄带 observer（12%~22%，短区块也顺序逐个亮）；
+     点击/当日跳转 = navLock 目标锁（点哪亮哪，平滑滚动途中不闪跳）。 */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll(".side nav a"));
+  var secs = Array.prototype.slice.call(document.querySelectorAll("main section"));
+  var navLock = null, lockTimer = null;
+  function setOn(id){
+    navLinks.forEach(function(a){ a.classList.toggle("on", a.getAttribute("href") === "#"+id); });
+  }
+  function lockNav(id){
+    navLock = id; setOn(id);
+    if (lockTimer) clearTimeout(lockTimer);
+    lockTimer = setTimeout(function(){ navLock = null; }, 1200);
+  }
+  navLinks.forEach(function(a){
+    a.addEventListener("click", function(){ lockNav((a.getAttribute("href") || "").slice(1)); });
+  });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (en.isIntersecting){
+        en.target.classList.add("in");
+        if (!navLock) setOn(en.target.id);
+      }
+    });
+  }, { rootMargin: "-12% 0px -78% 0px" });
+  secs.forEach(function(s){ io.observe(s); });
+
+  /* ---------- 6. 返回顶部 ---------- */
+  var bt = document.getElementById("backtop");
+  window.addEventListener("scroll", function(){
+    bt.classList.toggle("show", window.scrollY > 600);
+  }, { passive:true });
+  bt.addEventListener("click", function(){ window.scrollTo({ top:0, behavior:"smooth" }); });
+})();
+</script>
+<script>
+/* 兜底：若上方脚本报错导致入场动效未初始化，3 秒后强制显示全部内容 */
+setTimeout(function(){
+  if (!document.querySelector('main section.in')){
+    document.querySelectorAll('main section').forEach(function(s){ s.classList.add('in'); });
+  }
+}, 3000);
+</script>
+<div class="tailpad" style="height:96px"></div>
+</body>
+</html>
