@@ -48,7 +48,7 @@ def make_book(n_days):
         cam = [{"spot": "合成景点%d" % i, "time": "10:00-11:00 顺光", "how": "样张拍法",
                 "scope": "slot", "slot_ref": "d%ds2" % i}]
         if is_last:
-            slots.append({"id": "d%ds9" % i, "t": "16:00", "type": "transport",
+            slots.append({"id": "d%ds9" % i, "t": "19:30", "type": "transport",
                           "ref": "tr901", "text": "合成站→武汉（返程样张）"})
         days.append({
             "day": i, "date": date_of(i), "weekday": WEEK[i % 7], "city": "合成城",
