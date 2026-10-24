@@ -325,15 +325,19 @@ def r_ticket(data):
     legacy = 0
     dropped = []
     kept_rows, kept_refs = [], []
-    for i, ref in enumerate(refs):
-        if ref not in idx:  # 失效引用：删行+WARN，禁继续显示旧行（Codex 六轮复核）
-            dropped.append(ref)
-            continue
-        if i >= len(rows):
-            continue
-        kept_rows.append(rows[i])
-        kept_refs.append(ref)
-    rows, refs = kept_rows, kept_refs
+    # R10 修复（demo 样本暴露）：无 _row_refs 时必须原样渲染 rows——
+    # 旧逻辑 refs 空时 kept 循环不执行、rows 被空列表顶替=整表被清空
+    if refs:
+        for i, ref in enumerate(refs):
+            if ref not in idx:  # 失效引用：删行+WARN，禁继续显示旧行（Codex 六轮复核）
+                dropped.append(ref)
+                continue
+            if i >= len(rows):
+                continue
+            kept_rows.append(rows[i])
+            kept_refs.append(ref)
+        rows, refs = kept_rows, kept_refs
+    # refs 为空：保留原 rows 原样渲染（存量无引用数据兼容路径）
     if dropped:
         print("⚠ ticket 表删除 %d 行失效引用（业务记录已不存在）: %s" % (len(dropped), dropped))
     for i, ref in enumerate(refs):

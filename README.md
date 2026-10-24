@@ -121,16 +121,29 @@ jianhao-travel-planner/
 
 ## 工具模式（不装 skill，直接用生成工具链）
 
-v1.17 起随包提供完整生成工具链——不想让 AI 走整套技能流程的话，也可以按 `schema.md` 填写 `trip_data.json`（可交给任意 AI 按 schema 代填），然后机械四步：
+v1.17 起随包提供完整生成工具链——不想让 AI 走整套技能流程的话，也可以按 `schema.md` 填写 `trip_data.json`（可交给任意 AI 按 schema 代填）。**推荐用随包统一入口一条链跑完**（数据校验 → 生成 → 导览图注入 → 最终成品检查，自动按序执行并计时）：
 
 ```bash
-py tools/validate_trip_data.py 你的trip_data.json      # 数据闸（V01-V22：引用/枚举/日期对齐/费用三态/时刻单源等）
-py tools/gen_roadbook.py 你的trip_data.json 路书.html   # 生成（骨架指纹校验，天数自适应）
-py tools/checklist.py 路书.html --visual               # 成品检查（FAIL 清零才交付）
-py tools/apply_routes.py 你的trip_data.json 路书.html   # （有 routes 时）导览图注入
+py tools/pipeline.py full fixtures/demo/demo_full.json 我的示范册.html
 ```
 
-- 演示样本：`fixtures/good_full.json`（校验演示）；`fixtures/synth/`（3/8/10 天合成册，`py fixtures/make_synth_books.py` 可重新生成）
+也可分步执行（**顺序重要——导览图注入后必须再做最终成品检查**）：
+
+```bash
+py tools/validate_trip_data.py 你的trip_data.json      # ① 数据闸（V01-V22：引用/枚举/日期对齐/费用三态/时刻单源等）
+py tools/gen_roadbook.py 你的trip_data.json 路书.html   # ② 生成（骨架指纹校验，天数自适应）
+py tools/apply_routes.py 你的trip_data.json 路书.html   # ③ 导览图注入（有 routes 时执行；无 routes 自动跳过）
+py tools/checklist.py 路书.html --visual               # ④ 最终成品检查（注入后的最终页面，FAIL 清零才交付）
+```
+
+### 样本分工（三类，别混用）
+
+| 样本 | 用途 | 成品检查预期 |
+|---|---|---|
+| `fixtures/demo/demo_full.json` | **完整示范：第一次跑通用它**——虚构 3 天册，含导览图与全部板块 | 四步跑完 **FAIL 0** |
+| `fixtures/synth/book3/8/10.json` | 最小合成样本：**只用于测试链路**（内容空壳/配图不足属预期） | 内容类 FAIL 属预期，非上手示范 |
+| `fixtures/good_full.json` | 校验演示：演示数据规则（不可渲染生成） | 仅数据闸 |
+| `fixtures/synth_abroad_sample.json` | 出境格式样本（跨日红眼/时区/双币种） | 配合 test_abroad 使用 |
 - 回归测试（合成数据，不含真实目的地信息）：`py tools/test_synth_regression.py`；出境格式：`py tools/test_abroad.py`
 - 出境样本：`fixtures/synth_abroad_sample.json`（跨日红眼/时区/双币种）
 - 依赖：仅 Python 3.8+ 标准库；`checklist.py --visual` 的视觉检查可选装 Playwright（缺失自动 SKIP 声明）
