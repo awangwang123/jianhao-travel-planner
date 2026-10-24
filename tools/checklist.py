@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 2026-10-19 公用版同步：功能与作者版 v1.9 一致，叙事注释已中性化（实战案例去地名/去署名）。
+2026-10-24 公用版同步：功能与作者版 v1.10 一致——slot 正则兼容 data-slot-id 属性、0 样本 fail-closed（0 时刻 slot=FAIL 非假 PASS）、餐段判定窗口 40→18 字。
 路书交付前机械检查清单（通用版，任意城市路书可跑）
 用法: python checklist.py <路书.html> [--visual]
   --visual: 额外跑 Playwright 双视口/JS错/图渲染（需本机 playwright+Edge；跑不了会声明 SKIP）
@@ -140,7 +141,7 @@ for d in days:
     seg = m.group(1)
     # 双形态兼容：旧=<div class="slot"><b>HH:MM…文本；新(canonical/武汉v8+)=slot-time div+slot-body div
     # v1.9a 修：餐段词在 slot-body——按 slot 块抓（起点到下一 slot），时间取 slot-time，餐段词在整块文本找
-    slot_starts = list(re.finditer(r'<div class="slot"><b>([^<]+)</b>|<div class="slot"><div class="slot-time">([^<]+)</div>', seg))
+    slot_starts = list(re.finditer(r'<div class="slot"[^>]*><b>([^<]+)</b>|<div class="slot"[^>]*><div class="slot-time">([^<]+)</div>', seg))
     times = []
     meal_seq = []
     for i, sm in enumerate(slot_starts):
@@ -151,7 +152,7 @@ for d in days:
         if tm:
             times.append(int(tm.group(1)) * 60 + int(tm.group(2)) + (1440 if tm.group(3) else 0))
         body_txt = re.sub(r"<[^>]+>", " ", chunk)
-        head = re.sub(r"\s+", " ", body_txt)[:40]  # 餐段词判定窗口：slot 文本开头 40 字（餐行特征=时间后紧跟餐段；顺带提及如「机场午餐/晚餐」在窗口外不误判）
+        head = re.sub(r"\s+", " ", body_txt)[:18]  # v1.16 同步作者版 v1.10：窗口 40→18 字——餐段特征=紧跟时刻；40 字窗口把顺带提及（如「明后两天早餐时间」）误判成第二顿早餐（实战回归实证）。收紧代价：餐词靠后的合法餐行可能漏判（漏判比误伤温和）
         for kw in ("早餐", "午餐", "晚餐"):
             if kw in head:
                 meal_seq.append(kw)
@@ -164,6 +165,9 @@ for d in days:
         tl_bad.append(f"{d}重复餐段{dup}")
 if not days:
     pass  # 天数前置校验已 FAIL，此处不再叠加
+elif tl_total == 0:
+    # v1.16 同步作者版 v1.10 fail-closed：天数区块存在却读到 0 个带时刻 slot = 检查器无法解析当前结构，禁止假 PASS（data-slot-id 属性不匹配案）
+    addf("slot 时间线", f"读到 0 个带时刻 slot（{len(days)} 天区块存在）——检查器无法解析当前 slot 结构，时间线未检查；请更新匹配规则或核对页面结构")
 elif tl_bad:
     addf("slot 时间线", "；".join(tl_bad) + " —— 每日 slot 必须按时间升序、同餐段不重复（链式替换污染案+GPT 三漏检回归）")
 else:
