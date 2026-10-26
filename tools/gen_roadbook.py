@@ -595,13 +595,15 @@ def main():
     h = h.replace("<h2>【目的地】路书 · 【行程主题】</h2>",
                   "<h2>%s路书 · %s</h2>" % (esc(m["destination"].split("（")[0]), esc(m["title"])), 1)
     h = h.replace("__CITY__", "it")
-    # v1.18: 页尾图源/动线行支持 meta 覆盖（photo_credit / photo_credit_source / route_credit）——
-    # 缺省维持 Pexels/Commons+OSRM 口径不变；虚构示意册等非实拍成品必须如实覆盖，禁谎报图源
+    # v1.18: 页尾图源/动线行支持 meta 覆盖（photo_credit / photo_credit_source / route_credit）。
+    # 缺省一律中性说明——生成器不得替用户声明来源/授权/路径服务（v1.18 复核修正：
+    # 旧缺省无条件写「Pexels/Commons 授权实拍 + OSRM 真实路径」=未用该来源的成品自动谎报）；
+    # 确实使用了图库实拍/真实路径服务的成品，在数据里填字段如实声明
     h = h.replace("【逐张写明哪些是当地实景照、哪些是同题材示意（示意项须在 caption 标「（示意）」）】",
-                  m.get("photo_credit", "Pexels+Wikimedia Commons 授权实拍（摄影师署名见各图注）"))
+                  m.get("photo_credit", "配图来源与授权由制作者逐张核对申报（实拍图在图注标来源；非实拍图须标「（示意）」）"))
     h = h.replace("【自绘示意图说明：非等比例、仅供参考】",
-                  m.get("route_credit", "动线为 OSRM 真实路径示意，非等比例"))
-    h = h.replace("【图源】", m.get("photo_credit_source", "Pexels / Wikimedia Commons"))
+                  m.get("route_credit", "动线为示意图，非等比例"))
+    h = h.replace("【图源】", m.get("photo_credit_source", "以各图注标注为准"))
     # 打印页眉+页脚占位符（先长后短，防子串先被吃；回填册靠基线切块覆盖，新册须自填）
     dw = m["date_window"]["start"].replace("2026-", "") + "~" + m["date_window"]["end"].replace("2026-", "")
     h = h.replace("【出发地】出发 · 【日期区间】 · 【人数结构】",

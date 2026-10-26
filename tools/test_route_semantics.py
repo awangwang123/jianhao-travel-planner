@@ -83,6 +83,38 @@ expect_ok("自由文本形态合法",
           days)
 
 # 覆盖声明：只覆盖 1 天（2 天日程）→ 不 FAIL（覆盖数在 ok 文案如实报告）
+
+# ---- v1.18 越界必失败用例（checklist 2c 抽出的 svg_bounds 单元毒抓）----
+# 背景：旧 2c 只认 zoomable+polyline/circle，对 route-svg（line/rect/path）数出 0 张报 PASS。
+# 已知阳性对照（越界必判）+已知阴性对照（合法必过）+零样本声明，三面都断言。
+from svg_bounds import check_svg_bounds  # noqa: E402
+
+
+def bounds_case(name, html, expect_n, expect_bad):
+    n, skip, bad = check_svg_bounds(html)
+    if n == expect_n and bool(bad) == expect_bad:
+        OUT.write("PASS %s | n=%d bad=%s\n" % (name, n, bad))
+    else:
+        OUT.write("FAIL %s | n=%d(期望%d) bad=%s(期望有出界=%s)\n" % (name, n, expect_n, bad, expect_bad))
+        fails.append(name)
+
+
+G_SVG = '<svg class="route-svg" viewBox="0 0 720 300"><line x1="50" y1="50" x2="650" y2="250"/><rect x="100" y="60" width="200" height="60"/></svg>'
+bounds_case("route-svg 合法（line+rect 在框内）", G_SVG, 1, False)
+bounds_case("route-svg line 出界必判",
+            '<svg class="route-svg" viewBox="0 0 720 300"><line x1="50" y1="50" x2="900" y2="250"/></svg>', 1, True)
+bounds_case("route-svg rect 越右界必判",
+            '<svg class="route-svg" viewBox="0 0 720 300"><rect x="600" y="250" width="300" height="80"/></svg>', 1, True)
+bounds_case("route-svg path 出界必判",
+            '<svg class="route-svg" viewBox="0 0 720 300"><path d="M50,50 L1000,600"/></svg>', 1, True)
+bounds_case("zoomable polyline 出界必判（旧形态回归保护）",
+            '<svg class="zoomable" viewBox="0 0 300 120"><polyline points="10,10 400,50"/></svg>', 1, True)
+bounds_case("marker 小三角（局部坐标）不误报",
+            '<svg class="route-svg" viewBox="0 0 720 300"><defs><marker id="a"><path d="M0,0 L10,5 L0,10 z"/></marker></defs></svg>', 1, False)
+bounds_case("类名不匹配的 svg 不检查",
+            '<svg viewBox="0 0 100 100"><line x1="0" y1="0" x2="500" y2="500"/></svg>', 0, False)
+bounds_case("零样本如实报 0", "<p>no svg</p>", 0, False)
+
 OUT.write("RESULT: %s (%d fails)\n" % ("ALL PASS" if not fails else "HAS FAIL", len(fails)))
 try:
     print("RESULT: %s (%d fails)" % ("ALL PASS" if not fails else "HAS FAIL", len(fails)))

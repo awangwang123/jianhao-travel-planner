@@ -6,9 +6,10 @@ make_demo_book.py —— 完整示范样本（虚构目的地「云溪镇」3 �
 边界: 全部人名/店名/价格均为虚构演示数据；与 fixtures/synth/（最小合成册，仅测试链路）
       和 fixtures/good_full.json（校验规则演示）分工不同——本样本目标是「完整且检查全过」。
 用法: py make_demo_book.py  → 产出 fixtures/demo/demo_full.json
-配图: v1.18 起 7 张为 1200x750 虚构示意插画（含「虚构示意 · 非真实景点」标注，
-      PIL 预生成后以 base64 常量嵌入，本脚本保持纯标准库；更新配图跑
-      P3_生成器/_v118_demo_imgs.py + _v118_patch.py，勿手改 base64）
+配图: v1.18 起 7 张为 1200x750 虚构示意插画（每张标注「虚构示意 · 非真实景点」）。
+      配图以 base64 常量内嵌（本脚本保持纯标准库、零第三方依赖）：更换配图只需
+      把对应 FIG_* 常量里的 base64 串换成新图编码（任意「图片转 base64」工具均可
+      生成 PNG 的 base64），改完重跑本脚本再走四步链即可。
 """
 import io
 import json

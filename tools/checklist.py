@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+2026-10-26 v1.11：2c 动线图出界断言重构——①兼容 route-svg 程序化导览图（旧版只认 zoomable+属性顺序固定，
+pipeline 注入 3 图实际数出 0 张报 PASS 的零样本假绿案）②元素覆盖 polyline/circle/line/rect/path
+③零样本不再 PASS，报 WARN 声明覆盖缺口（fail-closed）④逻辑抽出 tools/svg_bounds.py 可单测，
+越界必失败用例入 test_route_semantics.py。
 2026-10-19 公用版同步：功能与作者版 v1.9 一致，叙事注释已中性化（实战案例去地名/去署名）。
 2026-10-24 公用版同步：功能与作者版 v1.10 一致——slot 正则兼容 data-slot-id 属性、0 样本 fail-closed（0 时刻 slot=FAIL 非假 PASS）、餐段判定窗口 40→18 字。
 路书交付前机械检查清单（通用版，任意城市路书可跑）
@@ -173,30 +177,16 @@ elif tl_bad:
 else:
     addp("slot 时间线", f"{len(days)} 天时间戳升序（读到 {tl_total} 个带时刻 slot）+同餐段无重复")
 
-# ---------- 2c. 动线图出界点断言（v1.9，v1.9 教训：bbox 覆盖路径全程——端点在框内≠路径在框内，长线绕行案 11 点出界 10px 目测漏） ----------
-svg_bad = []
-svg_n = 0
-for sm in re.finditer(r'<svg[^>]*viewBox="0 0 (\d+) (\d+)"[^>]*class="zoomable"[^>]*>(.*?)</svg>', t, re.S):
-    vw, vh, body = int(sm.group(1)), int(sm.group(2)), sm.group(3)
-    svg_n += 1
-    oob = 0
-    for pm in re.finditer(r'<polyline[^>]*points="([^"]+)"', body):
-        for pt in pm.group(1).split():
-            xy = pt.split(",")
-            if len(xy) == 2:
-                x, y = float(xy[0]), float(xy[1])
-                if x < -2 or y < -2 or x > vw + 2 or y > vh + 2:
-                    oob += 1
-    for cm in re.finditer(r'<circle[^>]*cx="(-?[\d.]+)"[^>]*cy="(-?[\d.]+)"', body):
-        x, y = float(cm.group(1)), float(cm.group(2))
-        if x < -2 or y < -2 or x > vw + 2 or y > vh + 2:
-            oob += 1
-    if oob:
-        svg_bad.append(f"SVG#{svg_n}出界{oob}点")
+# ---------- 2c. 动线图出界点断言（v1.9 立；v1.11 重构：兼容 route-svg+line/rect/path，零样本 WARN 不 PASS，逻辑在 svg_bounds.py） ----------
+from svg_bounds import check_svg_bounds
+svg_n, svg_skip, svg_bad = check_svg_bounds(t)
 if svg_bad:
-    addf("动线图出界", "、".join(svg_bad) + " —— polyline/circle 坐标越出 viewBox（bbox 必须覆盖路径全程，数学断言替代目测）")
+    addf("动线图出界", "、".join(svg_bad) + " —— polyline/circle/line/rect/path 坐标越出 viewBox（bbox 必须覆盖路径全程，数学断言替代目测）")
+elif svg_n == 0:
+    addw("动线图出界", "0 张可检导览图（zoomable/route-svg）——若本册应有路线图即覆盖缺口，须排查生成/注入环节；确认无图才可放行")
 else:
-    addp("动线图出界", f"{svg_n} 张 zoomable SVG 坐标全在框内（容差 2px）")
+    extra = f"；另有 {svg_skip} 张类名匹配但 viewBox 非 0 0 起点，未检" if svg_skip else ""
+    addp("动线图出界", f"{svg_n} 张导览图坐标全在框内（容差 2px）{extra}")
 
 # ---------- 3. author 资格 ----------
 if '<section id="author"' in t:
