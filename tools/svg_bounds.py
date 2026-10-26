@@ -50,10 +50,12 @@ def check_svg_bounds(t):
             continue
         vw, vh = float(vm.group(1)), float(vm.group(2))
         oob = 0
+        hits = 0  # 实际完成坐标检查的点数——零点=未检查（v1.18r3：解析不完整/零坐标不得计入已检查）
         unsup = []
 
         def hit(x, y):
-            nonlocal oob
+            nonlocal oob, hits
+            hits += 1
             if x < -2 or y < -2 or x > vw + 2 or y > vh + 2:
                 oob += 1
 
@@ -67,14 +69,14 @@ def check_svg_bounds(t):
             hit(max(xs), max(ys))
             return True
 
-        ok = True
+        # polyline：坐标序列数字提取后成对消费（逗号/空白/换行分隔等价）；奇数个或空=解析不完整计阻断
         for pm in re.finditer(r'<polyline\b[^>]*\bpoints="([^"]+)"', body):
-            for pt in pm.group(1).split():
-                xy = pt.split(",")
-                if len(xy) != 2:
-                    ok = False
-                    break
-                hit(float(xy[0]), float(xy[1]))
+            nums = re.findall(_NUM, pm.group(1))
+            if len(nums) < 2 or len(nums) % 2 != 0:
+                unsup.append("polyline 坐标无法成对解析")
+                continue
+            for i in range(0, len(nums), 2):
+                hit(float(nums[i]), float(nums[i + 1]))
 
         for cm in re.finditer(r'<(circle|ellipse)\b[^>]*>', body):
             tag = cm.group(0)
@@ -102,6 +104,8 @@ def check_svg_bounds(t):
             hit(x, y)
             hit(x + w, y + h)
 
+        # path：命令白名单（绝对 M/L/Z）+ 数字提取后成对消费——分隔符不限空格/逗号（含换行）；
+        # 无坐标可查（如仅闭合 z）=未检查
         for pm in re.finditer(r'<path\b[^>]*\bd="([^"]+)"', body):
             d = pm.group(1)
             letters = set(re.findall(r"[A-Za-z]", d))
@@ -109,11 +113,17 @@ def check_svg_bounds(t):
                 unsup.append("path 含未支持命令 %s（仅支持绝对 M/L/Z）"
                              % "".join(sorted(letters - _PATH_OK)))
                 continue
-            for nm in re.finditer(r'(%s)[ ,]+(%s)' % (_NUM, _NUM), d):
-                hit(float(nm.group(1)), float(nm.group(2)))
+            nums = re.findall(_NUM, d)
+            if len(nums) < 2 or len(nums) % 2 != 0:
+                unsup.append("path 坐标无法成对解析")
+                continue
+            for i in range(0, len(nums), 2):
+                hit(float(nums[i]), float(nums[i + 1]))
 
         if unsup:
             partial.append(tagname + " " + "；".join(sorted(set(unsup))))
+        elif hits == 0:
+            partial.append(tagname + " 零个有效坐标被检查（无可检坐标元素），不算已完成检查")
         else:
             checked += 1
             if oob:

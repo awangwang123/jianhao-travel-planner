@@ -135,6 +135,23 @@ bounds_case("marker 小三角（局部绝对 M/L/z）不误报",
 bounds_case("类名不识别计入 unrec（调用方阻断）",
             '<svg viewBox="0 0 100 100"><line x1="0" y1="0" x2="500" y2="500"/></svg>', expect_unrec=1, expect_checked=0)
 bounds_case("零样本如实报 total=0", "<p>no svg</p>", expect_checked=0, expect_total=0)
+
+# ---- v1.18r3（WW 三次复核）解析完整性两反例固化 + 界内格式阳性 ----
+# 反例1：polyline 空格分隔坐标（旧解析只认逗号、ok 变量未消费=静默零检查仍 PASS）
+bounds_case("反例4 polyline 空格分隔越界必判",
+            '<svg class="route-svg" viewBox="0 0 100 100"><polyline points="10 10 200 200"/></svg>', expect_bad=True)
+bounds_case("polyline 空格分隔界内正常通过（阳性）",
+            '<svg class="route-svg" viewBox="0 0 100 100"><polyline points="10 10 80 80"/></svg>')
+# 反例2：path d 含换行分隔（旧配对正则只认空格/逗号、零对命中仍计已检查）
+bounds_case("反例5 path 换行分隔越界必判",
+            '<svg class="route-svg" viewBox="0 0 100 100"><path d="M10\n10 L200\n200"/></svg>', expect_bad=True)
+bounds_case("path 换行分隔界内正常通过（阳性）",
+            '<svg class="route-svg" viewBox="0 0 100 100"><path d="M10\n10 L80\n80"/></svg>')
+# 解析不完整一律 partial，不得计入已检查
+bounds_case("polyline 奇数个坐标计未检",
+            '<svg class="route-svg" viewBox="0 0 100 100"><polyline points="10,10 80"/></svg>', expect_partial=True, expect_checked=0)
+bounds_case("path 无坐标可查计未检",
+            '<svg class="route-svg" viewBox="0 0 100 100"><path d="z"/></svg>', expect_partial=True, expect_checked=0)
 OUT.write("RESULT: %s (%d fails)\n" % ("ALL PASS" if not fails else "HAS FAIL", len(fails)))
 try:
     print("RESULT: %s (%d fails)" % ("ALL PASS" if not fails else "HAS FAIL", len(fails)))
