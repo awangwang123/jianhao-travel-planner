@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 2026-10-26 v1.11：2c 动线图出界断言重构——①兼容 route-svg 程序化导览图（旧版只认 zoomable+属性顺序固定，
-pipeline 注入 3 图实际数出 0 张报 PASS 的零样本假绿案）②元素覆盖 polyline/circle/line/rect/path
+pipeline 注入 3 图实际数出 0 张报 PASS 的零样本假绿案）②元素覆盖 polyline/circle(含半径)/line/rect/path
 ③零样本不再 PASS，报 WARN 声明覆盖缺口（fail-closed）④逻辑抽出 tools/svg_bounds.py 可单测，
 越界必失败用例入 test_route_semantics.py。
+2026-10-26 v1.11r2（WW 二次复核三缺口收紧）：①零样本 WARN→分流：有 svg 但无一张可检/部分未检/形态
+不识别=FAIL 明确阻断，无任何 svg=SKIP「不适用」单列（WARN 不再冒充自动拦截）②circle/ellipse 计半径
+四至（圆心在框内半径越界案）③path 仅支持绝对 M/L/Z，相对命令与 transform 一律 partial 阻断——
+未检对象不能算已检查。
 2026-10-19 公用版同步：功能与作者版 v1.9 一致，叙事注释已中性化（实战案例去地名/去署名）。
 2026-10-24 公用版同步：功能与作者版 v1.10 一致——slot 正则兼容 data-slot-id 属性、0 样本 fail-closed（0 时刻 slot=FAIL 非假 PASS）、餐段判定窗口 40→18 字。
 路书交付前机械检查清单（通用版，任意城市路书可跑）
@@ -177,16 +181,23 @@ elif tl_bad:
 else:
     addp("slot 时间线", f"{len(days)} 天时间戳升序（读到 {tl_total} 个带时刻 slot）+同餐段无重复")
 
-# ---------- 2c. 动线图出界点断言（v1.9 立；v1.11 重构：兼容 route-svg+line/rect/path，零样本 WARN 不 PASS，逻辑在 svg_bounds.py） ----------
+# ---------- 2c. 动线图出界点断言（v1.9 立；v1.11 兼容 route-svg；v1.11r2 按 WW 二次复核收紧：
+# 部分未检/形态不识别=FAIL 明确阻断、无图=SKIP 不适用、circle 计半径、相对命令与 transform 阻断。逻辑在 svg_bounds.py） ----------
 from svg_bounds import check_svg_bounds
-svg_n, svg_skip, svg_bad = check_svg_bounds(t)
-if svg_bad:
-    addf("动线图出界", "、".join(svg_bad) + " —— polyline/circle/line/rect/path 坐标越出 viewBox（bbox 必须覆盖路径全程，数学断言替代目测）")
-elif svg_n == 0:
-    addw("动线图出界", "0 张可检导览图（zoomable/route-svg）——若本册应有路线图即覆盖缺口，须排查生成/注入环节；确认无图才可放行")
+_svg = check_svg_bounds(t)
+if _svg["bad"]:
+    addf("动线图出界", "、".join(_svg["bad"]) + " —— 坐标越出 viewBox（bbox 必须覆盖路径全程，数学断言替代目测）")
+elif _svg["total"] == 0:
+    results.append(("SKIP", "动线图出界", "本册未检出任何带 viewBox 的 svg——无导览图可检；若本册应有路线图请排查生成/注入环节"))
+elif _svg["partial"] or _svg["unrecognized"]:
+    msg = "存在未能完成出界检查的导览图（部分未检≠通过，须改写为受支持形态或扩 bbox）："
+    if _svg["partial"]:
+        msg += " %s" % "；".join(_svg["partial"][:6])
+    if _svg["unrecognized"]:
+        msg += "；%d 张 svg 类名不在 zoomable/route-svg（无法识别是否导览图）" % _svg["unrecognized"]
+    addf("动线图出界", msg)
 else:
-    extra = f"；另有 {svg_skip} 张类名匹配但 viewBox 非 0 0 起点，未检" if svg_skip else ""
-    addp("动线图出界", f"{svg_n} 张导览图坐标全在框内（容差 2px）{extra}")
+    addp("动线图出界", "%d 张导览图坐标全在框内（容差 2px）" % _svg["checked"])
 
 # ---------- 3. author 资格 ----------
 if '<section id="author"' in t:

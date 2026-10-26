@@ -1,83 +1,122 @@
 # -*- coding: utf-8 -*-
 """
-svg_bounds.py —— 导览图出界点断言的可测实现（v1.18 从 checklist 2c 抽出）
-背景: 旧 2c 只认 `viewBox 在前 + class="zoomable" 在后` 且只解析 polyline/circle——
-      gen_route_svg 程序化注入的导览图是 `class="route-svg"`（class 在前）、动线用
-      line/rect、path 仅 marker 小三角——形态完全不匹配，数出 0 张还报 PASS（零样本假绿）。
-本模块: ①类名兼容 zoomable（skill 手工导览图）与 route-svg（程序化注入），属性顺序无关
-        ②元素覆盖 polyline/circle/line/rect/path(d 数字对)
-        ③零匹配不算通过——调用方须对 svg_n==0 报 WARN/FAIL（fail-closed）
-取舍: path d 提取全部坐标对（含贝塞尔控制点）——保守方向宁可误报不漏报；
-      marker 局部小坐标（0~10）天然在界内不会误报。
+svg_bounds.py —— 导览图出界点断言的可测实现（v1.18 立，v1.18r2 按 WW 二次复核收紧）
+设计原则: ①只声明「已检查」的才算检查过——任何无法完整解析的形态一律计入 partial 阻断，
+          禁静默跳过；②只覆盖生成器实际使用的形态（绝对 M/L/Z path + line/rect/polyline
+          + circle/ellipse 含半径），超出能力的写法（相对命令/H/V/贝塞尔/transform/
+          非 0 0 viewBox）明确未检；③类名不识别的 svg 单独计数，调用方判定阻断。
+返回: dict(checked, partial, unrecognized, bad, total)
+      checked=完成坐标检查张数（含查出出界的）；partial=未能完成检查的张数明细；
+      unrecognized=有 viewBox 但类名不是导览图的张数；bad=出界明细；total=带 viewBox 的 svg 总数。
 """
 import re
 
-# 认这些类名的 svg 才是导览图（其余 svg 不检查）
 CLASS_KEYS = ("zoomable", "route-svg")
+# path d 允许的命令字母：M/L 绝对坐标对 + Z/z 闭合（生成器 marker 三角形态）。
+# 相对命令(m l h v c q s t a)与贝塞尔/弧线(C Q S T H V A)一律阻断——数字配对不等于坐标语义
+_PATH_OK = set("MLZz")
+_NUM = r"-?[\d.]+"
 
 
 def _attr(tag, name):
-    m = re.search(r'\b%s="(-?[\d.]+)"' % name, tag)
+    m = re.search(r'\b%s="(%s)"' % (name, _NUM), tag)
     return float(m.group(1)) if m else None
 
 
 def check_svg_bounds(t):
-    """扫描 HTML 文本，返回 (svg_n, skipped, bad_list)。
-    svg_n=已检查的导览图张数；skipped=类名匹配但 viewBox 非 "0 0" 起点无法检查的张数；
-    bad_list 元素形如 "SVG#1出界3点"。"""
-    svg_n = skipped = 0
+    total = checked = unrecognized = 0
+    partial = []
     bad = []
+    idx = 0  # 已识别导览图编号（bad/partial 明细用）
 
     for sm in re.finditer(r'<svg\b([^>]*)>(.*?)</svg>', t, re.S):
         attrs, body = sm.group(1), sm.group(2)
+        if 'viewBox="' not in attrs:
+            continue  # 无坐标系的 svg（装饰件）不在导览图判定范围
+        total += 1
         cls = re.search(r'class="([^"]*)"', attrs)
         if not cls or not any(k in cls.group(1) for k in CLASS_KEYS):
+            unrecognized += 1
             continue
+        idx += 1
+        tagname = "SVG#%d" % idx
+
         vm = re.search(r'viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"', attrs)
         if not vm:
-            skipped += 1
+            partial.append(tagname + " viewBox 非「0 0 宽 高」起点，坐标语义未定未检")
+            continue
+        if re.search(r'\btransform="', attrs) or re.search(r'\btransform="', body):
+            partial.append(tagname + " 含 transform 变换，属性坐标≠渲染位置未检")
             continue
         vw, vh = float(vm.group(1)), float(vm.group(2))
-        svg_n += 1
         oob = 0
+        unsup = []
 
         def hit(x, y):
             nonlocal oob
             if x < -2 or y < -2 or x > vw + 2 or y > vh + 2:
                 oob += 1
 
-        # polyline：points="x,y x,y ..."
+        def seg(tag, names):
+            """四至点检查；属性缺失返回 False（调用方计阻断）"""
+            vals = [_attr(tag, n) for n in names]
+            if any(v is None for v in vals):
+                return False
+            xs, ys = vals[0::2], vals[1::2]
+            hit(min(xs), min(ys))
+            hit(max(xs), max(ys))
+            return True
+
+        ok = True
         for pm in re.finditer(r'<polyline\b[^>]*\bpoints="([^"]+)"', body):
             for pt in pm.group(1).split():
                 xy = pt.split(",")
-                if len(xy) == 2:
-                    hit(float(xy[0]), float(xy[1]))
-        # circle / line / rect：抓标签后逐属性抽（属性顺序无关）
-        for cm in re.finditer(r'<circle\b[^>]*>', body):
-            cx, cy = _attr(cm.group(0), "cx"), _attr(cm.group(0), "cy")
-            if cx is not None and cy is not None:
-                hit(cx, cy)
+                if len(xy) != 2:
+                    ok = False
+                    break
+                hit(float(xy[0]), float(xy[1]))
+
+        for cm in re.finditer(r'<(circle|ellipse)\b[^>]*>', body):
+            tag = cm.group(0)
+            is_e = tag.startswith("<ellipse")
+            cx, cy = _attr(tag, "cx"), _attr(tag, "cy")
+            rx = _attr(tag, "rx") if is_e else _attr(tag, "r")
+            ry = _attr(tag, "ry") if is_e else rx
+            if cx is None or cy is None or rx is None or ry is None:
+                unsup.append("circle/ellipse 属性不全")
+                continue
+            hit(cx - rx, cy - ry)
+            hit(cx + rx, cy + ry)
+
         for lm in re.finditer(r'<line\b[^>]*>', body):
-            tag = lm.group(0)
-            x1, y1 = _attr(tag, "x1"), _attr(tag, "y1")
-            x2, y2 = _attr(tag, "x2"), _attr(tag, "y2")
-            if None not in (x1, y1, x2, y2):
-                hit(x1, y1)
-                hit(x2, y2)
+            if not seg(lm.group(0), ("x1", "y1", "x2", "y2")):
+                unsup.append("line 属性不全")
+
         for rm in re.finditer(r'<rect\b[^>]*>', body):
             tag = rm.group(0)
             x, y = _attr(tag, "x"), _attr(tag, "y")
             w, h = _attr(tag, "width"), _attr(tag, "height")
-            if None not in (x, y, w, h):
-                hit(x, y)
-                hit(x + w, y)
-                hit(x, y + h)
-                hit(x + w, y + h)
-        # path：d 里全部数字对当坐标点查（marker 局部小坐标天然在界内）
+            if None in (x, y, w, h):
+                unsup.append("rect 属性不全")
+                continue
+            hit(x, y)
+            hit(x + w, y + h)
+
         for pm in re.finditer(r'<path\b[^>]*\bd="([^"]+)"', body):
-            for nm in re.finditer(r'(-?[\d.]+)[ ,]+(-?[\d.]+)', pm.group(1)):
+            d = pm.group(1)
+            letters = set(re.findall(r"[A-Za-z]", d))
+            if not letters <= _PATH_OK:
+                unsup.append("path 含未支持命令 %s（仅支持绝对 M/L/Z）"
+                             % "".join(sorted(letters - _PATH_OK)))
+                continue
+            for nm in re.finditer(r'(%s)[ ,]+(%s)' % (_NUM, _NUM), d):
                 hit(float(nm.group(1)), float(nm.group(2)))
 
-        if oob:
-            bad.append("SVG#%d出界%d点" % (svg_n, oob))
-    return svg_n, skipped, bad
+        if unsup:
+            partial.append(tagname + " " + "；".join(sorted(set(unsup))))
+        else:
+            checked += 1
+            if oob:
+                bad.append(tagname + "出界%d点" % oob)
+    return {"checked": checked, "partial": partial, "unrecognized": unrecognized,
+            "bad": bad, "total": total}
