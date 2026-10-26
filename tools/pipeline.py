@@ -73,5 +73,102 @@ def main():
     print("⏱ 本链耗时: %s（自动计时落 timer_records.jsonl）｜路径: %s" % (human, path_report))
 
 
+def cmd_new(args):
+    """v1.19: 从 template_trip_data.json 实例化骨架——普通制作只填值，不读源码"""
+    import json as _json
+    import datetime
+    tpl = os.path.join(HERE, "..", "template_trip_data.json")
+    data = _json.load(io.open(tpl, encoding="utf-8"))
+    start = datetime.date.fromisoformat(args.start)
+    days = data["days"][:args.days]
+    need = args.days - len(days)
+    for i in range(max(0, need)):
+        last = data["days"][-1]
+        days.append(dict(last, day=len(days) + 1))
+    data["days"] = days
+    wd = "一二三四五六日"
+    for i, day in enumerate(data["days"]):
+        dt = start + datetime.timedelta(days=i)
+        day["date"] = dt.strftime("%m-%d")
+        day["weekday"] = wd[dt.weekday()]
+    data["meta"]["title"] = "%s %d 天 · 朋友版" % (args.dest, args.days)
+    data["meta"]["destination"] = args.dest
+    data["meta"]["date_window"] = {"start": start.isoformat(),
+                                   "end": (start + datetime.timedelta(days=args.days - 1)).isoformat()}
+    out = os.path.join(args.dir, "trip_data.json")
+    os.makedirs(args.dir, exist_ok=True)
+    io.open(out, "w", encoding="utf-8").write(_json.dumps(data, ensure_ascii=False, indent=1))
+    print("skeleton written:", out)
+    print("next: edit it (fields -> schema.md speed table), then: pipeline.py outline %s" % out)
+
+
+def cmd_outline(args):
+    """v1.19: 简表前置检查点——30 秒出时刻轴+费用速算+预警，过了再配图扩写"""
+    import re
+    import json as _json
+    data = _json.load(io.open(args.data, encoding="utf-8"))
+    warns = []
+    print("========== 行程简表 ==========")
+    for day in data["days"]:
+        print("D%s %s %s · %s" % (day["day"], day.get("date", ""), day.get("weekday", ""), day.get("theme", "")))
+        prev = None
+        for s in day["slots"]:
+            if isinstance(s["t"], str):
+                t = s["t"]
+            else:
+                tr = s["t"].get("tr_ref")
+                t = "?"
+                for trr in data.get("transports", []):
+                    if trr["id"] == tr:
+                        t = trr["applicability"].get(s["t"].get("field"), "?")
+            if prev and t < prev:
+                warns.append("D%s 时刻倒退: %s 在 %s 之后" % (day["day"], t, prev))
+            prev = t
+            txt = re.sub(r"<[^>]+>", "", s.get("text", ""))[:38]
+            print("  %s %-9s %s" % (t, s.get("type", ""), txt))
+    print("========== 费用速算（主选，不含自选） ==========")
+    lo = hi = 0.0
+    for e in data.get("expenses", []):
+        if (e.get("billing") or {}).get("optional"):
+            continue
+        unit = e.get("unit", "")
+        mult = 2 if unit == "每人" else (e.get("scope", {}).get("rooms", 1) if unit == "每间夜" else 1)
+        a = e.get("amount")
+        mn, mx = e.get("amount_min"), e.get("amount_max")
+        if a is not None:
+            l = hh = a * mult
+        elif mn is not None and mx is not None:
+            l, hh = mn * mult, mx * mult
+        else:
+            warns.append("费用 %s(%s) 无金额字段" % (e.get("id"), e.get("label", "")[:12]))
+            continue
+        lo += l
+        hi += hh
+    print("合计: %.0f ~ %.0f CNY（2 人）｜人均 %.0f ~ %.0f" % (lo, hi, lo / 2, hi / 2))
+    n_meal = {}
+    for e in data.get("expenses", []):
+        if e.get("category") == "餐饮" and not (e.get("billing") or {}).get("optional"):
+            n_meal[e.get("ref", "?")] = 1
+    print("========== 预警 ==========")
+    if not warns:
+        print("（无）")
+    else:
+        for w in warns:
+            print("⚠ " + w)
+    print("提醒: 过了这关再配图扩写；配图后跑 full --visual")
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) >= 2 and sys.argv[1] == "new":
+        ap = __import__("argparse")
+        p = ap.ArgumentParser()
+        p.add_argument("dest")
+        p.add_argument("--days", type=int, default=3)
+        p.add_argument("--start", required=True, help="首日日期 YYYY-MM-DD")
+        p.add_argument("--dir", default="pkg_work")
+        a = p.parse_args(sys.argv[2:])
+        cmd_new(a)
+    elif len(sys.argv) >= 2 and sys.argv[1] == "outline":
+        cmd_outline(type("A", (), {"data": sys.argv[2]})())
+    else:
+        main()

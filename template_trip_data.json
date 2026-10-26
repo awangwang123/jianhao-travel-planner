@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.1",
+  "meta": {
+    "title": "示例城市 3 天 · 朋友版",
+    "destination": "示例城市",
+    "home_city": "武汉",
+    "date_window": {"start": "2026-11-06", "end": "2026-11-08"},
+    "pax": {"adults": 2, "children": 0, "note": "2 位成人朋友"},
+    "tier": "standard",
+    "timezones": [{"area": "Asia/Shanghai", "utc_offset": "+08:00", "vs_home_hours": 0}],
+    "city_code": "example",
+    "checked_at_label": "2026-11-01",
+    "budget_tail_note": "隐藏成本已留行：景区交通/停车/服务费/小费"
+  },
+  "tickets": [
+    {"id": "t001", "name": "示例景点", "text": "含 A/B/C 三区；16:30 停售", "price_display": "90 元", "applicability": {"reservation": "公众号实名预约", "date": "11-07"}}
+  ],
+  "stays": [
+    {"id": "s001", "name": "示例酒店（双床房）", "text": "老城核心区，步行达夜市", "applicability": {"checkin": "14:00", "checkout": "12:00", "nights": 2}}
+  ],
+  "meals": [
+    {"id": "m001", "name": "示例早餐铺", "text": "人均 12 元"},
+    {"id": "m002", "name": "示例正餐", "text": "人均 60 元"}
+  ],
+  "flights": [],
+  "transports": [
+    {"id": "tr001", "name": "G0001 武汉→示例城市", "applicability": {"mode": "高铁", "dep_time": "09:00", "arr_time": "12:00"}, "text": "二等座票价以 12306 实价为准", "billing": {"optional": false, "reason": ""}},
+    {"id": "tr002", "name": "地铁 2 号线 示例站→市中心", "applicability": {"mode": "地铁", "dep_time": "12:30"}, "text": "约 30 分钟，4 元/人", "billing": {"optional": true, "reason": "市内公交地铁口径"}}
+  ],
+  "misc": [
+    {"id": "x001", "name": "旅行意外险（3 天）", "text": "短期险常见档"}
+  ],
+  "expenses": [
+    {"id": "e001", "ref": "tr001", "category": "城际交通", "label": "去程高铁", "amount_min": 240, "amount_max": 360, "currency": "CNY", "unit": "每人", "qty": 1, "price_mode": "含税", "tier": "主选", "pay_status": "待付", "verify_status": "estimated", "checked_at": "2026-11-01", "source": "聚合源页面价+核价指引"},
+    {"id": "e002", "ref": "t001", "category": "门票", "label": "示例景点门票", "amount": 90, "currency": "CNY", "unit": "每人", "qty": 1, "price_mode": "含税", "tier": "主选", "pay_status": "待付", "verify_status": "verified", "checked_at": "2026-11-01", "source": "官网/官方公众号"}
+  ],
+  "days": [
+    {"day": 1, "date": "11-06", "weekday": "五", "city": "示例城市",
+     "theme": "抵达 · 老城漫游",
+     "slots": [
+       {"id": "d1s1", "t": "08:20", "type": "meal", "ref": "m001", "text": "早餐·家中/途中解决"},
+       {"id": "d1s2", "t": {"tr_ref": "tr001", "field": "dep_time"}, "type": "transport", "ref": "tr001", "text": "<b>G0001 武汉→示例城市</b>（时刻由正本单源引用）"},
+       {"id": "d1s3", "t": {"tr_ref": "tr001", "field": "arr_time"}, "type": "transport", "ref": "tr001", "text": "抵达示例城市站——地铁赴市中心"},
+       {"id": "d1s4", "t": "13:45", "type": "checkin", "ref": "s001", "text": "入住示例酒店——行李寄存前台"},
+       {"id": "d1s5", "t": "14:30", "type": "spot", "text": "<b>示例老街</b>：青石板路+当地小吃"},
+       {"id": "d1s6", "t": "18:30", "type": "meal", "ref": "m002", "text": "晚餐·示例正餐"}
+     ],
+     "meals": {"早餐": {"ref": "m001"}, "午餐": {"ref": "m002"}, "晚餐": {"ref": "m002"}},
+     "stay": {"ref": "s001"},
+     "cam": [{"spot": "示例老街", "time": "16:00-17:00 侧光", "how": "贴地拍延伸线", "scope": "slot", "slot_ref": "d1s5"}],
+     "knowhow": "示例冷知识一句话。",
+     "planb": "雨天：示例室内馆替代老街。",
+     "svg_html": "",
+     "photos_html": ""
+    },
+    {"day": 2, "date": "11-07", "weekday": "六", "city": "示例城市",
+     "theme": "第二天主题",
+     "slots": [
+       {"id": "d2s1", "t": "09:30", "type": "spot", "ref": "t001", "text": "<b>示例景点</b>（预约时段）"},
+       {"id": "d2s2", "t": "12:30", "type": "meal", "ref": "m002", "text": "午餐·就近"}
+     ],
+     "meals": {"早餐": {"ref": "m001"}, "午餐": {"ref": "m002"}, "晚餐": {"ref": "m002"}},
+     "stay": {"ref": "s001"},
+     "cam": [],
+     "knowhow": "",
+     "planb": "",
+     "svg_html": "",
+     "photos_html": ""
+    },
+    {"day": 3, "date": "11-08", "weekday": "日", "city": "示例城市",
+     "theme": "返程",
+     "slots": [
+       {"id": "d3s1", "t": "08:00", "type": "meal", "ref": "m001", "text": "早餐·退房前"},
+       {"id": "d3s2", "t": {"tr_ref": "tr001", "field": "arr_time"}, "type": "transport", "ref": "tr001", "text": "返程抵达武汉"}
+     ],
+     "meals": {"早餐": {"ref": "m001"}, "午餐": {"ref": "m002"}, "晚餐": {"ref": "m002"}},
+     "stay": null,
+     "cam": [],
+     "knowhow": "",
+     "planb": "",
+     "svg_html": "",
+     "photos_html": ""
+    }
+  ],
+  "routes": [
+    {"day": 1, "title": "抵达 · 老城漫游", "notes": ["节点顺序即拓扑；slot_ref 绑定到【抵达】事件，时刻由数据派生"],
+     "nodes": [{"label": "武汉站", "time": "08:00"},
+               {"label": "示例城市站", "time": "12:00", "arrive_mode": "rail"},
+               {"label": "示例酒店", "time": "13:45", "arrive_mode": "taxi", "slot_ref": "d1s4"},
+               {"label": "示例老街", "time": "14:30", "arrive_mode": "walk", "slot_ref": "d1s5"}]}
+  ],
+  "overview_structured": {
+    "eyebrow": "总览 · 行程速览", "h1": "示例城市 3 天（朋友版）",
+    "leads": ["示例城市｜武汉 → {date_range}｜2 成人"],
+    "warn_line": "出发前按当日预报与官方公示终判",
+    "weather": [],
+    "weather_note": "出发前 3 天按当日预报终判",
+    "figure_html": "",
+    "tail_note": ""
+  },
+  "prep_structured": {"cards": []},
+  "sos_structured": {"eyebrow": "应急", "h2": "应急", "lead": "", "cards": [{"h4": "🆘 紧急号码", "p": "110 / 120 急诊 / 119"}]},
+  "boost_structured": {"eyebrow": "可选 · 更从容", "h2": "可选 · 更从容", "lead": "自愿项目不进主线合计", "items": []},
+  "gift_structured": {"eyebrow": "特产 · 带一份回家", "h2": "手信", "table": {"widths": ["40%", "60%"], "cols": ["手信", "说明"], "rows": []}, "tail_notes": []},
+  "drive_structured": {"eyebrow": "路程 · 交通串联", "h2": "大交通", "table": {"widths": ["30%", "70%"], "cols": ["段", "说明"], "rows": []}, "tail_notes": []},
+  "stay_structured": {"eyebrow": "住宿", "h2": "住宿", "lead": "", "table": {"widths": ["30%", "70%"], "cols": ["晚", "说明"], "rows": []}, "tail_notes": []},
+  "ticket_structured": {"eyebrow": "门票 · 预约", "h2": "门票", "lead": "", "table": {"widths": ["40%", "20%", "40%"], "cols": ["景点", "价格", "说明"], "rows": [], "_row_refs": []}, "tail_notes": []},
+  "tips_structured": {"eyebrow": "提示", "h2": "提示", "lead": "", "tips": [], "tail_cards": []},
+  "eat_structured": {"eyebrow": "照着吃就行", "h2": "吃什么", "lead": "", "groups": [], "tail_title": "必吃清单", "tail_body": "", "tail_cards": [], "tail_footer": null, "upgrade_note": ""}
+}

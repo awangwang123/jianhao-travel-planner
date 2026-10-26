@@ -4,6 +4,28 @@
 > 上游设计：`..\P3_生成器立项设计.md` v2 §3.1 ｜ 本文件是「表格规范」，校验脚本是「规范的可执行形态」
 > 三条总纪律：①金额唯一出现处=`expenses` 费用明细账（业务记录禁存金额，防双写打架）②机械字段（价格/时刻/日期）模型禁手写、引用 ref；文案写在 `text` 字段 ③每条事实带 `checked_at`+`evidence`（字段级挂接，一个链接≠整条已核验）
 
+## 字段速查（正常制作看这节就够；完整规范见下方各节）
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `meta.title/destination/home_city` | ✓ | 标题/目的地/出发城市 |
+| `meta.date_window.start/end` | ✓ | 日期窗（YYYY-MM-DD） |
+| `meta.pax.adults/children` | ✓ | 人数结构 |
+| `tickets[]` | 按需 | `id/name/text/price_display/applicability{reservation,date}` |
+| `stays[]` | 住宿必填 | `id/name/text/applicability{checkin,checkout,nights}` |
+| `meals[]` | ✓ | `id/name/text`（人均写 text） |
+| `transports[]` | ✓ | `id/name/applicability{mode,dep_time,arr_time}/text`；mode∈高铁/地铁/巴士等中文口径 |
+| `expenses[]` | ✓ | `id/ref/category/label` + **金额二选一：`amount`（定值）或 `amount_min`+`amount_max`（区间）**；`unit∈每人/每单/每间夜`；`qty`；`verify_status∈verified/estimated/unverified`；自选项加 `billing:{optional:true,reason}` |
+| `days[].slots[]` | ✓ | `id/t/type∈meal,transport,spot,checkin,note/ref/text`；`t` 可为 `"HH:MM"` 或引用 `{"tr_ref":"tr001","field":"dep_time"}` |
+| `days[].meals/stay/cam/knowhow/planb` | ✓ | 三餐落点/住宿引用/机位（2-4 处/天）/冷知识/雨天方案 |
+| `days[].svg_html/photos_html` | ✓ | 每日配图 HTML（base64 内嵌）；空=成品闸 FAIL |
+| `routes[].nodes[]` | 有 routes 必填 | `label/time/arrive_mode∈rail,bus,taxi,cable,walk`；`slot_ref` 可选——绑定到**抵达事件**的 slot（语义=该节点实际抵达时刻） |
+| `overview_structured` 等八块 | ✓ | 总览/出发前/应急/可选/手信/路程/住宿/门票/提示/美食的结构化区块（形态见 TEMPLATE.md） |
+
+> 金额规则：`unit=每人` 自动 ×人数；`每间夜` ×rooms；`每单` 不乘。自选项不计入主线合计。
+> 最小可执行示例：`template_trip_data.json`（标准 JSON，可直接 `pipeline new` 实例化）。
+
+
 ## 0. 顶层结构
 
 ```json

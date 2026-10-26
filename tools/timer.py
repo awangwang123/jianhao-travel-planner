@@ -86,6 +86,32 @@ def main():
             fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
         io.open(TS_FILE, "w", encoding="utf-8").write(json.dumps(state, ensure_ascii=False, indent=1))
         print("TIMER end [%s] %s -> %s -> %s" % (tag, st["start_str"], ts, rec["human"]))
+    elif cmd == "stage":
+        # v1.19：阶段打点（需求/实查/填数/生成/复核…）——自动记录各阶段起止，取代手填"约多少分钟"
+        if len(sys.argv) < 3:
+            print("TIMER ERROR: stage 需要阶段名，如: py timer.py stage 实查")
+            sys.exit(2)
+        stage = sys.argv[2]
+        ts, epoch = _now()
+        state = {}
+        if os.path.exists(TS_FILE):
+            state = json.load(io.open(TS_FILE, encoding="utf-8"))
+        prev = state.pop("_stage", None)
+        recs = []
+        if prev:
+            dur = epoch - prev["epoch"]
+            recs.append({"type": "stage", "stage": prev["name"], "end": ts,
+                         "seconds": round(dur, 1),
+                         "human": "%dm%02ds" % (int(dur // 60), int(dur % 60))})
+        state["_stage"] = {"name": stage, "epoch": epoch, "start_str": ts}
+        with io.open(LOG_FILE, "a", encoding="utf-8") as fh:
+            for r in recs:
+                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+        io.open(TS_FILE, "w", encoding="utf-8").write(json.dumps(state, ensure_ascii=False, indent=1))
+        if prev:
+            print("TIMER stage [%s] -> [%s]（上一段 %s %dm%02ds）" % (prev["name"], stage, prev["name"], int(dur // 60), int(dur % 60)))
+        else:
+            print("TIMER stage [%s] 开始（首段）" % stage)
     elif cmd == "list" or cmd == "listall":
         if os.path.exists(LOG_FILE):
             for line in io.open(LOG_FILE, encoding="utf-8"):

@@ -591,7 +591,7 @@ def main():
     h = h.replace('<div class="logo-sub">【N 天 N 晚】 · 【人数结构】</div>',
                   '<div class="logo-sub">%s · %d 人</div>' % (days_cn, m["pax"]["adults"]), 1)
     h = h.replace("<title>【目的地】路书 · 基准骨架</title>",
-                  "<title>%s · P3 渲染 v0.2</title>" % esc(m["title"]), 1)
+                  "<title>%s</title>" % esc(m["title"]), 1)
     h = h.replace("<h2>【目的地】路书 · 【行程主题】</h2>",
                   "<h2>%s路书 · %s</h2>" % (esc(m["destination"].split("（")[0]), esc(m["title"])), 1)
     h = h.replace("__CITY__", "it")

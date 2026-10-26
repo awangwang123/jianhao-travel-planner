@@ -20,9 +20,10 @@ from fact import fact_display, resolve_slot_t, fill_slot_text  # R8 引用派生
 # 线型定义表（单一来源：连线与图例都从这里派生——M6 教训 D5：图例与线型不符/两图互斥）
 MODE_STYLE = {
     "walk":  {"stroke": "#5C594E", "dash": "",      "label": "步行/接驳"},
-    "rail":  {"stroke": "#2F5D43", "dash": "",      "label": "高铁"},
+    "rail":  {"stroke": "#2F5D43", "dash": "",      "label": "高铁/地铁"},
     "bus":   {"stroke": "#B08D2E", "dash": "6 4",   "label": "站点巴士"},
     "cable": {"stroke": "#8A3B2E", "dash": "",      "label": "园区索道/步道"},
+    "taxi":  {"stroke": "#A0472F", "dash": "3 2",   "label": "打车"},
 }
 MODE_DEFAULT = "walk"
 NOTE_W = 480          # 注释盒宽
