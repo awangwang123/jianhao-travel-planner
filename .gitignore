@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 *_result.txt
 .git/
+.timer_state.json
+timer_records.jsonl
+*.bak-v*
