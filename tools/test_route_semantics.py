@@ -84,7 +84,7 @@ expect_ok("自由文本形态合法",
 
 # 覆盖声明：只覆盖 1 天（2 天日程）→ 不 FAIL（覆盖数在 ok 文案如实报告）
 
-# ---- v1.18 越界必失败用例（checklist 2c 抽出的 svg_bounds 单元毒抓；v1.18r2 按 WW 二次复核扩充）----
+# ---- v1.18 越界必失败用例（checklist 2c 抽出的 svg_bounds 单元毒抓；v1.18r2 按 外部二次评审扩充）----
 # 背景：旧 2c 只认 zoomable+polyline/circle，对 route-svg（line/rect/path）数出 0 张报 PASS。
 # 断言口径：bad 非空=查出越界；partial 非空=存在未检（必须阻断）；两者皆空且 checked>0=干净。
 from svg_bounds import check_svg_bounds  # noqa: E402
@@ -118,7 +118,7 @@ bounds_case("zoomable polyline 出界必判（旧形态回归保护）",
             '<svg class="zoomable" viewBox="0 0 300 120"><polyline points="10,10 400,50"/></svg>', expect_bad=True)
 bounds_case("circle 半径越界必判（圆心在框内）",
             '<svg class="zoomable" viewBox="0 0 100 100"><circle cx="90" cy="50" r="30"/></svg>', expect_bad=True)
-# WW 二次复核三反例固化（10/26：相对路径/平移/圆半径全部漏检案）
+# 外部二次评审三反例固化（10/26：相对路径/平移/圆半径全部漏检案）
 bounds_case("反例1 相对命令 path 阻断未检",
             '<svg class="route-svg" viewBox="0 0 100 100"><path d="M90 50 l50 0"/></svg>', expect_partial=True, expect_checked=0)
 bounds_case("反例2 transform 平移内 line 阻断未检",
@@ -136,7 +136,7 @@ bounds_case("类名不识别计入 unrec（调用方阻断）",
             '<svg viewBox="0 0 100 100"><line x1="0" y1="0" x2="500" y2="500"/></svg>', expect_unrec=1, expect_checked=0)
 bounds_case("零样本如实报 total=0", "<p>no svg</p>", expect_checked=0, expect_total=0)
 
-# ---- v1.18r3（WW 三次复核）解析完整性两反例固化 + 界内格式阳性 ----
+# ---- v1.18r3（外部三次评审）解析完整性两反例固化 + 界内格式阳性 ----
 # 反例1：polyline 空格分隔坐标（旧解析只认逗号、ok 变量未消费=静默零检查仍 PASS）
 bounds_case("反例4 polyline 空格分隔越界必判",
             '<svg class="route-svg" viewBox="0 0 100 100"><polyline points="10 10 200 200"/></svg>', expect_bad=True)

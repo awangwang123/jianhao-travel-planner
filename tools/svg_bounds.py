@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-svg_bounds.py —— 导览图出界点断言的可测实现（v1.18 立，v1.18r2 按 WW 二次复核收紧）
+svg_bounds.py —— 导览图出界点断言的可测实现（v1.18 立，v1.18r2 按 外部二次评审收紧）
 设计原则: ①只声明「已检查」的才算检查过——任何无法完整解析的形态一律计入 partial 阻断，
           禁静默跳过；②只覆盖生成器实际使用的形态（绝对 M/L/Z path + line/rect/polyline
           + circle/ellipse 含半径），超出能力的写法（相对命令/H/V/贝塞尔/transform/

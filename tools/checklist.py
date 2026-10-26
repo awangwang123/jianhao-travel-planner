@@ -4,10 +4,10 @@
 pipeline 注入 3 图实际数出 0 张报 PASS 的零样本假绿案）②元素覆盖 polyline/circle(含半径)/line/rect/path
 ③零样本不再 PASS，报 WARN 声明覆盖缺口（fail-closed）④逻辑抽出 tools/svg_bounds.py 可单测，
 越界必失败用例入 test_route_semantics.py。
-2026-10-26 v1.11r3（WW 三次复核解析完整性收紧）：polyline/path 改「数字全提取+成对语义校验」——
+2026-10-26 v1.11r3（外部三次评审解析完整性收紧）：polyline/path 改「数字全提取+成对语义校验」——
 分隔符空格/逗号/换行等价（空格分隔 polyline、换行分隔 M/L 两反例旧版静默零检查仍 PASS 案）；
 无法成对解析/零个有效坐标被检查=partial 不算已检查。
-2026-10-26 v1.11r2（WW 二次复核三缺口收紧）：①零样本 WARN→分流：有 svg 但无一张可检/部分未检/形态
+2026-10-26 v1.11r2（外部二次评审三缺口收紧）：①零样本 WARN→分流：有 svg 但无一张可检/部分未检/形态
 不识别=FAIL 明确阻断，无任何 svg=SKIP「不适用」单列（WARN 不再冒充自动拦截）②circle/ellipse 计半径
 四至（圆心在框内半径越界案）③path 仅支持绝对 M/L/Z，相对命令与 transform 一律 partial 阻断——
 未检对象不能算已检查。
@@ -184,7 +184,7 @@ elif tl_bad:
 else:
     addp("slot 时间线", f"{len(days)} 天时间戳升序（读到 {tl_total} 个带时刻 slot）+同餐段无重复")
 
-# ---------- 2c. 动线图出界点断言（v1.9 立；v1.11 兼容 route-svg；v1.11r2 按 WW 二次复核收紧：
+# ---------- 2c. 动线图出界点断言（v1.9 立；v1.11 兼容 route-svg；v1.11r2 按 外部二次评审收紧：
 # 部分未检/形态不识别=FAIL 明确阻断、无图=SKIP 不适用、circle 计半径、相对命令与 transform 阻断。逻辑在 svg_bounds.py） ----------
 from svg_bounds import check_svg_bounds
 _svg = check_svg_bounds(t)
