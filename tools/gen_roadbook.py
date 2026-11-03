@@ -705,6 +705,10 @@ def main():
                   ".pp img{max-width:100%;height:auto;display:block}"
                   "@media(max-width:768px){.pp figure{flex-basis:100%}}"
                   "</style>\n</head>", 1)
+    import os as _os
+    _d = _os.path.dirname(_os.path.abspath(OUT))
+    if _d and not _os.path.isdir(_d):
+        _os.makedirs(_d, exist_ok=True)
     io.open(OUT, "w", encoding="utf-8").write(h)
     print("✅ 写出 %s（%d 字符）" % (OUT, len(h)))
     print("指纹在位：%s ✓" % FINGERPRINT)
