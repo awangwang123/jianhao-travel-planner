@@ -83,6 +83,66 @@ def idx(data):
     return m
 
 
+def _fill_tr(text, I, where):
+    """day_brief 文本占位符 {tr:ID.路径.字段} → 业务正本值派生（运营窗口等口径不手写第二处）。
+    正本查不到 → 渲染「【待核实】」（fail-visible，不静默空串）。"""
+    out = text or ""
+    for key in set(re.findall(r"\{tr:([\w.]+)\}", out)):
+        tid, _, fpath = key.partition(".")
+        v = I.get(tid)
+        for part in (fpath.split(".") if fpath else []):
+            v = v.get(part) if isinstance(v, dict) else None
+        out = out.replace("{tr:%s}" % key, str(v) if v not in (None, "") else "【待核实】")
+    return out
+
+
+def r_day_brief(brief, slots, I):
+    """v3.57 day_brief 节奏短表（任务书二-3：活动起止/接驳时长/午餐窗口/运营截止/余量逐段一表）。
+    时刻单源：from/to 用 slot 引用 {"ref":"d2s3"}（直取该 slot 时刻）或 {"ref":"d2s3","+add":45}
+    （估抵=引用时刻+正文时长推算，渲染带「约」）——改 slots 短表自动同步，不产生第二处手写时刻。
+    how/edge 文本支持 {tr:ID.applicability.字段} 占位符（经 _fill_tr 查正本填充）。
+    行字段：seg 段名 / from / to(可省) / how 方式与时长 / edge 边界·余量(可省)；head/widths 可选。"""
+    by_id = {s.get("id"): s for s in slots if s.get("id")}
+
+    def cell_t(cell, where):
+        if cell is None:
+            return ""
+        if isinstance(cell, str):
+            return esc(cell)
+        s = by_id.get(cell.get("ref"))
+        if not s:
+            raise ValueError("day_brief %s: slot %r 不存在（引用必须挂在本日 slots）" % (where, cell.get("ref")))
+        t = resolve_slot_t(s.get("t", ""), I, "day_brief %s" % where)
+        m = re.match(r"\s*(\d{1,2}):(\d{2})", str(t))
+        if not m:
+            return esc(str(t))
+        if cell.get("add"):
+            mm = int(m.group(1)) * 60 + int(m.group(2)) + int(cell["add"])
+            return "约 %02d:%02d" % (mm // 60, mm % 60)
+        return "%02d:%02d" % (int(m.group(1)), int(m.group(2)))
+
+    head = brief.get("head") or ["段", "时间窗", "方式与时长", "边界与余量"]
+    widths = brief.get("widths") or ["16%", "21%", "29%", "34%"]
+    trs = []
+    for i, r in enumerate(brief.get("rows") or []):
+        t1 = cell_t(r.get("from"), "row%d.from" % i)
+        t2 = cell_t(r.get("to"), "row%d.to" % i)
+        win = t1 + ("—%s" % t2 if t2 else "")
+        how = _fill_tr(r.get("how", ""), I, "row%d.how" % i)
+        edge = _fill_tr(r.get("edge", ""), I, "row%d.edge" % i)
+        trs.append("    <tr><td><b>%s</b></td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                   % (esc(r.get("seg", "")), win, esc(how), esc(edge)))
+    cg = "".join('<col style="width:%s">' % w for w in widths)
+    th = "".join("<th>%s</th>" % esc(c) for c in head)
+    out = ['<div style="overflow-x:auto"><table class="tb">',
+           "  <colgroup>%s</colgroup>" % cg,
+           "  <thead><tr>%s</tr></thead>" % th,
+           "  <tbody>", "\n".join(trs), "  </tbody>", "</table></div>"]
+    if brief.get("note"):
+        out.append('<p style="font-size:13px;color:#5a5246;margin:.3em 0 0">%s</p>' % esc(brief["note"]))
+    return "\n".join(out)
+
+
 def r_day(d, I):
     """v0.4 数据驱动渲染：day 块=骨架注释官方结构（作者 17:xx 打回修正版）
     顺序：day-head → 🧭今日速览 → 动线图 → photos → .slot×N（机位灰字小字紧随对应 slot=v3.56③）
@@ -95,6 +155,8 @@ def r_day(d, I):
                  % (d["day"], esc(label), esc(h3)))
     if d.get("brief"):
         parts.append(noterow("🧭", "今日速览", d["brief"]))
+    if d.get("day_brief"):
+        parts.append(r_day_brief(d["day_brief"], d.get("slots") or [], I))
     if d.get("svg_html"):
         parts.append(d["svg_html"])  # 每日动线图（真底图 SVG，家族基准件）
     if d.get("photos_html"):
@@ -456,9 +518,9 @@ def r_overview_body(data):
     parts.append('<div class="pp" style="display:flex;flex-wrap:wrap;gap:8px">' + O["figure_html"] + "</div>")
     parts.append(O["tail_note"])
     # B16（Codex 六轮）：总览动线图=家族基准件（无则缺件，由数据提供 route_svg_html）
-    # v1.19c2 修复：此处曾重复 append tail_note（B16 引入的复制粘贴残留，所有册总览尾部双渲染）
     if O.get("route_svg_html"):
         parts.append(O["route_svg_html"])
+    parts.append(O["tail_note"])
     return "\n".join(parts)
 
 

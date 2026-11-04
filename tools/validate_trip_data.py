@@ -442,6 +442,89 @@ def check_date_alignment(data, v):
         v.ok("V14", "每日日期与窗口推算一致（%d 天闭合）" % len(days))
 
 
+
+
+def check_structured_fields(data, v):
+    """V23（v1.20 新增，FAIL 级）结构化字段形态预检——生成前一次报出全部字段路径与期望类型。
+    覆盖：prep_structured.cards / tips_structured.tail_cards / boost_structured.items / days[].day_brief。
+    空容器（骨架初始态）合法——只在「有值但形态错」时 FAIL；
+    逐条 v.fail 聚合（不遇错即停），一次给全修补清单。"""
+    errs = []
+
+    def _is_str(x):
+        return isinstance(x, str)
+
+    prep = data.get("prep_structured") or {}
+    for ci, card in enumerate(prep.get("cards") or []):
+        w = "prep_structured.cards[%d]" % ci
+        if not isinstance(card, dict):
+            errs.append((w, "期望 dict（含 card_attr/eyebrow/lead_p/items），实际 %s" % type(card).__name__))
+            continue
+        for f in ("card_attr", "eyebrow", "lead_p"):
+            if not _is_str(card.get(f)):
+                errs.append((w + "." + f, "期望 str，实际 %r" % (card.get(f),)))
+        items = card.get("items")
+        if not isinstance(items, list) or not items:
+            errs.append((w + ".items", "期望非空 list[{id,html,hot?}]，实际 %r" % (items,)))
+        else:
+            for ii, it in enumerate(items):
+                if not isinstance(it, dict) or not _is_str(it.get("id")) or not _is_str(it.get("html")):
+                    errs.append((w + ".items[%d]" % ii,
+                                 "期望 dict{id:str, html:str, hot?:bool}，实际 %r" % (it,)))
+                elif "hot" in it and not isinstance(it["hot"], bool):
+                    errs.append((w + ".items[%d].hot" % ii, "期望 bool，实际 %r" % (it["hot"],)))
+
+    tips = data.get("tips_structured") or {}
+    for ti, tc in enumerate(tips.get("tail_cards") or []):
+        if not _is_str(tc) or "<div" not in tc:
+            errs.append(("tips_structured.tail_cards[%d]" % ti,
+                         "期望原生 HTML 字符串（完整 <div class=\"tip\">…</div> 片段，非 {h4,p} 形态），实际 %r"
+                         % (str(tc)[:60],)))
+
+    boost = data.get("boost_structured") or {}
+    for bi, it in enumerate(boost.get("items") or []):
+        if not isinstance(it, dict) or not _is_str(it.get("html")):
+            errs.append(("boost_structured.items[%d]" % bi,
+                         "期望 dict{html:str, mt10?:bool}（字符串数组会渲染崩溃），实际 %r" % (it,)))
+        elif "mt10" in it and not isinstance(it["mt10"], bool):
+            errs.append(("boost_structured.items[%d].mt10" % bi, "期望 bool，实际 %r" % (it["mt10"],)))
+
+    for di, day in enumerate(data.get("days") or []):
+        db = day.get("day_brief")
+        if not db:
+            continue
+        w = "days[%d].day_brief" % di
+        if not isinstance(db, dict):
+            errs.append((w, "期望 dict{head?,widths?,rows,note?}，实际 %s" % type(db).__name__))
+            continue
+        head = db.get("head")
+        widths = db.get("widths")
+        if head is not None and widths is not None and len(head) != len(widths):
+            errs.append((w, "head(%d 列) 与 widths(%d 列) 数量不一致" % (len(head), len(widths))))
+        by_id = {s.get("id") for s in (day.get("slots") or []) if s.get("id")}
+        for ri, r in enumerate(db.get("rows") or []):
+            if not isinstance(r, dict) or not (r.get("seg") or "").strip():
+                errs.append((w + ".rows[%d]" % ri, "期望 dict{seg:str, from:ref, to?:ref, how, edge?}，seg 必填"))
+                continue
+            for side in ("from", "to"):
+                cell = r.get(side)
+                if cell is None:
+                    if side == "from":
+                        errs.append((w + ".rows[%d].from" % ri, "必填（时间窗起点）"))
+                    continue
+                if isinstance(cell, str):
+                    continue  # 裸字符串时刻允许（与正本一致性由 V20 侧覆盖）
+                ref = cell.get("ref") if isinstance(cell, dict) else None
+                if ref not in by_id:
+                    errs.append((w + ".rows[%d].%s.ref" % (ri, side),
+                                 "slot %r 不在本日 slots（%s）——引用必须挂本日" % (ref, sorted(by_id)[:4])))
+
+    if errs:
+        for w, msg in errs:
+            v.fail("V23", w, msg)
+    else:
+        v.ok("V23", "结构化字段形态合法（prep.cards/tips.tail_cards/boost.items/day_brief）")
+
 def route_check(data, v):
     """V15（v1.2 新增，FAIL 级）: routes 导览图路线数据毒化闸——
     结构非法（<2 节点/mode 非法/遗留 edge_from/day 重复/label 空）必须拒绝，
@@ -1142,6 +1225,7 @@ def main():
     flight_crossday_check(data, v)
     flight_duration_check(data, v)
     ticket_date_binding_check(data, v)
+    check_structured_fields(data, v)
     summary = budget_calc(data, v)
 
     if summary and not [f for f in v.fails if f == "V10"]:

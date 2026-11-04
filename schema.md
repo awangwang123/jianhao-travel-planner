@@ -149,10 +149,57 @@
 - `slots[].text`（v1.2 R9）：班次/航段时刻**禁止手写**——用占位符 `{dep}`/`{arr}`（渲染时由 `fill_slot_text` 从该 slot 绑定班次正本填充，fact 核实状态随文案保留）。V20 两类拦截：a) 手写正本当前值（脆弱副本，改正本必漂移，地图标题亦从正文派生）；b) 班次号邻近时刻与正本无一相符（改正本漏改文案的矛盾残留）。普通时段（无班次号邻近，如「17:30 停运」）不受影响
 - `slots[].user_ok`（v1.2 R5 游玩开始闸，V17 唯一实质规则）：当日**首个 type=spot**（游玩开始）早于 `play_start`（默认 09:30）时须该 slot 带 `user_ok:{"reason": "…"}`——即用户明确选择的早间玩法（日出/晨雾等）；制作侧不得自行补例外放行，未选择的早起玩法列 planb 可选。**起床/洗漱不入册**（R4 的 `day.wake` 强制字段作废，读到仅 WARN）；**早餐、交通按实际行程需要列出，可安排在游玩线之前**，不校验（R4「吃饭/交通都算首项安排」的扩大化管制作废）；接驳合理、不赶场属制作判断。R3 的 bool `early_ok` 同样废弃——读到仅 WARN，不作为放行依据
 - `day` 连续编号（跳号=FAIL，承接 checklist v1.9 天数前置校验精神）
+- `day_brief`（v1.20 新增，节奏短表组件）：当日接驳/停留/截止/余量逐段一表，渲染在今日速览后、动线图前。形态 `{head?, widths?, rows, note?}`（head/widths 缺省=四列「段/时间窗/方式与时长/边界与余量」）；`rows[]`=`{seg, from, to?, how, edge?}`——**时刻单源**：`from`/`to` 用 slot 引用 `{"ref":"d2s3"}`（直取该 slot 时刻）或 `{"ref":"d2s3","+add":45}`（估抵=引用+正文时长推算，渲染带「约」；裸字符串时刻允许但失去单源联动）；`how`/`edge` 支持 `{tr:ID.applicability.字段}` 占位符（查业务正本填充，正本缺失渲染「【待核实】」fail-visible）。引用必须挂**本日** slots（悬空/跨日=FAIL，V23）
 
 ## 5. assets 配图
 
 `[{"id":"a001","file":"…","credit":"…","license":"…","pool_ref":"…"}]`（M2 渲染接入，schema 先占位）
+
+## 5b. 结构化板块字段契约（v1.20 新增，V23 生成前预检）
+
+骨架初始态（空容器）合法；**有值即按下述形态填**，形态错误在数据闸被 V23 一次报出（字段路径+期望类型）——不再生成后 KeyError 再读源码猜结构（M7 实测 D2/D3/D4 三类崩溃的正本文档）。
+
+### prep_structured（出发前板块）
+
+```json
+{
+  "cards": [
+    {"card_attr": "id=\"prep-countdown\"",
+     "eyebrow": "出发前倒计时",
+     "lead_p": "只收「出发前要做的事」，按时间先后排",
+     "items": [
+       {"id": "ck1", "html": "<b>买票（现在就买）</b>：12306 购 XXX", "hot": true},
+       {"id": "ck2", "html": "关注官方公众号：盯运营公告（无 hot 键=普通项）"}
+     ],
+     "tail_p": "以上为 YYYY-MM-DD 实查口径；出行日以官方为准（可为空串）"}
+  ]
+}
+```
+
+- `card_attr`：卡片 div 原生属性串（如 `id="prep-countdown"`，锚点/计数用）
+- `items[]`：`{id: str, html: str, hot?: bool}`——`hot:true` 渲染高亮；缺 id/html=FAIL（V23）
+
+### tips_structured（提示板块）
+
+```json
+{"eyebrow": "提示", "h2": "真实场景 · 提前知道", "lead": "一句话导语",
+ "tips": ["❌ 坑描述一句话", "📷 参数速查卡一句话"],
+ "tail_cards": ["<div class=\"tip\" style=\"border-left:4px solid #e6a23c\"><p>📲 卡片正文（原生 HTML 片段）</p></div>"]}
+```
+
+- `tail_cards[]` 每项=**完整原生 HTML 字符串**（含 `<div`）；`{h4,p}` 对象形态渲染崩溃（join TypeError，M7 实测 D3）=FAIL（V23）
+
+### boost_structured（可选板块）
+
+```json
+{"eyebrow": "可选 · 更从容", "h2": "可选 · 更从容", "lead": "自愿项目不进主线合计",
+ "items": [
+   {"html": "观日出（可选建议）：……"},
+   {"html": "索道（80 元/人往返）：……", "mt10": true}
+ ]}
+```
+
+- `items[]` 每项=`{html: str, mt10?: bool}`（`mt10:true`=与上一项留间距）；裸字符串数组渲染崩溃（M7 实测 D4）=FAIL（V23）
 
 ## 6. 校验器规则清单（validate_trip_data.py 必须实现，FAIL 输出规则号）
 
@@ -180,3 +227,4 @@
 | V19 | 跨日航班排天闸（v1.2 R7，FAIL 级，出境语义①）：同 flight ref 复现于到达日（写法约定）时——到达日=紧邻次日、到达 slot 为当日最早、起飞后无非 note 安排、出发当夜 stay 空；crosses_days=true 必须排到达 slot；≥22:00 起飞未复现未声明=WARN 红眼嫌疑 |
 | V21 | 跨时区时长自洽闸（v1.2 R9 重写，FAIL 级，出境语义②）：**完整当地日期时间核对**——expected_arr = dep_date+dep_time+duration_min+时差，与 arr_date+arr_time 差 ≤10min（时长多填一天必拦，钟面取模旧法已废）；**输入完备强制**——flights 表非空时缺 dep/arr_time、duration_min、日期、航段时区任一=「未检」FAIL 阻断验收（有航班缺输入≠不适用，不适用仅限无航班） |
 | V22 | 门票日期绑定闸（v1.2 R8 重写，FAIL 级，出境语义③）：绑定日经 `_resolve_date` 解析（YYYY-MM-DD 直用；MM-DD 结合窗口定年——**支持跨年窗口**，统一换年份的旧法已废）须落入窗口，且与实际使用日一致（绑错日=当天进不了园）；未绑定不拦 |
+| V23 | 结构化字段形态预检（v1.20 新增，FAIL 级）：`prep.cards[]` 须含 card_attr/eyebrow/lead_p(str) 与非空 items[{id,html,hot?}]；`tips.tail_cards[]` 每项须含 `<div` 的原生 HTML 字符串（{h4,p} 形态拒）；`boost.items[]` 每项须 {html,mt10?} dict（裸字符串拒）；`day_brief` head/widths 等长、rows[].seg 必填、from/to 的 slot ref 必须挂本日。空容器合法；逐条聚合一次报出全部路径 |
