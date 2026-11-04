@@ -456,9 +456,9 @@ def r_overview_body(data):
     parts.append('<div class="pp" style="display:flex;flex-wrap:wrap;gap:8px">' + O["figure_html"] + "</div>")
     parts.append(O["tail_note"])
     # B16（Codex 六轮）：总览动线图=家族基准件（无则缺件，由数据提供 route_svg_html）
+    # v1.19c2 修复：此处曾重复 append tail_note（B16 引入的复制粘贴残留，所有册总览尾部双渲染）
     if O.get("route_svg_html"):
         parts.append(O["route_svg_html"])
-    parts.append(O["tail_note"])
     return "\n".join(parts)
 
 
