@@ -201,6 +201,39 @@
 
 - `items[]` 每项=`{html: str, mt10?: bool}`（`mt10:true`=与上一项留间距）；裸字符串数组渲染崩溃（M7 实测 D4）=FAIL（V23）
 
+## 5c. map_spec 真底图导览图（v1.20 新增，tools/route_map.py 数据驱动）
+
+导览图=通用渲染器（`route_map.py`）+`trip_data.json` 顶层 `map_spec` 数据——**换目的地填数据，不改工具**（替代每册手写地图脚本）。空缺=无图（合法）。
+
+```json
+"map_spec": {
+  "clear_routes": true,
+  "maps": {
+    "d2": {"bbox": [112.66,27.21,112.76,27.31], "z": 13, "base": "d2_base.png",
+            "target": {"day": 2}, "note1": "虚线=车行段…", "note2": "高德瓦片底图…",
+            "points": [
+              {"key": "zf", "lonlat": [112.6897,27.29722], "label": "祝融峰", "solid": true,
+               "anchor": "middle", "dx": 0, "dy": -40, "slot_refs": ["d2s7","d2s8"]},
+              {"key": "ntm", "lonlat": [112.695,27.283], "label": "南天门", "solid": false, "slot_refs": ["d2s3"]}],
+            "lines": [{"via": ["gk","ntm"], "dash": true, "width": 8}],
+            "list": [{"place": "环保车进山", "ev": [
+              {"t": "d2s3"}, {"lit": " 乘车（约 40—50 分钟盘山）→ 约 "},
+              {"est": {"ref": "d2s3", "add": 45, "label": "车程中值"}}, {"lit": " 抵南天门片区"}]}]}}}
+```
+
+- `points[]`：`key` 供 lines 引用；`solid:false`=空心虚线示意点（图内自动带「（示意）」，与「未核实不落精确点」口径同规则）；`slot_refs`=该点位关联的 slot id（**悬空=FAIL**）
+- `list[].ev` 事件句：`{"t":"d2s3"}` slot 引用 ／ `{"t":"tr003.applicability.dep_time"}` 业务正本引用（完整路径）／ `{"est":{"ref","add","label"}}` 推算（+分钟，渲染带「约」）／ `{"diff":{"est_ref","est_add","to"}}` 分钟差（余量句）／ `{"lit":"..."}` 字面。**一切时刻禁字面写**，否则审计 FAIL
+- `target`：`{"figure":true}`=总览 figure_html；`{"day":N}`=days[N-1].svg_html
+- 运行：`py tools/route_map.py <trip_data.json>`（底图瓦片拼接用包内 assets/basemap_tool.py，无本机外部依赖）
+
+**渲染器内建四道硬闸**（WW 2026-11-04 复核四项的机制化）：
+1. **A1 单源审计**：产物文本反扫一切 HH:MM，未经 slot/正本引用或推算登记=FAIL 退出（不回写）——「读了数据≠渲染了该数据」的防线
+2. **A2 挂点校验**：`points[].slot_refs` 与 ev 引用必须解析到本册真实 slot/正本，悬空=FAIL
+3. **A3 出界断言**：标注超 viewBox=FAIL
+4. **A4 示意口径**：`solid:false` 空心虚线点=图内明示「示意」，与实现同规则
+
+**检查归属声明（routes 退役后）**：启用 map_spec 时建议 `clear_routes:true`（竖向流程图与真底图二选一，V15 空列表=ok）。此时路线正确性检查=①A2 挂点/引用机检 ②A1 时刻审计 ③**事件语义（时刻挂的地点/事件是否正确）仍须制作侧逐节点人工对照行程正文复核**——机检不覆盖语义，此边界如实声明，不宣称全自动
+
 ## 6. 校验器规则清单（validate_trip_data.py 必须实现，FAIL 输出规则号）
 
 | 规则号 | 内容 |

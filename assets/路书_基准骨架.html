@@ -128,6 +128,35 @@ table.tb{width:100%;border-collapse:collapse;margin-top:14px;font-size:.85rem;ba
 .backtop{position:fixed;bottom:24px;right:20px;z-index:20;width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);border:none;font-size:1.1rem;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s;box-shadow:0 4px 14px rgba(47,93,67,.3)}
 .backtop.show{opacity:1;pointer-events:auto}
 
+/* ---------- 手机顶部导航（≤900px 常驻；桌面用左侧栏） ----------
+   当前章节/按天/目录三项全部由 JS 从本册内容自动生成（不手填）；
+   高度写入 --mtnh 变量：跳转落点 scroll-margin 与正文顶垫同步，跳转后标题不被挡；
+   打印不显示（见 @media print）。 */
+.mtopnav{display:none}
+.mtopnav-menu{display:none}
+@media (max-width:900px){
+  body{padding-top:var(--mtnh,56px)}
+  .mtopnav{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:8px;
+    padding:10px 14px;background:rgba(252,251,247,.96);border-bottom:1px solid var(--line);
+    box-shadow:0 2px 10px rgba(28,27,23,.06)}
+  .mtopnav-now{flex:1;min-width:0;font-size:.8rem;font-weight:700;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mtopnav .mbtn{flex:none;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+    padding:9px 13px;font-size:.76rem;font-weight:700;color:var(--ink2);cursor:pointer}
+  .mtopnav .mbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .mtopnav-menu{position:fixed;top:calc(var(--mtnh,56px) + 6px);left:10px;right:10px;z-index:29;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 8px 26px rgba(28,27,23,.14);max-height:60vh;overflow-y:auto;padding:8px}
+  .mtopnav-menu.open{display:grid;gap:4px}
+  .mtopnav-menu .mtn-label{font-size:.6rem;letter-spacing:.16em;color:var(--ink3);padding:6px 12px 2px}
+  .mtopnav-menu a{padding:10px 12px;border-radius:8px;font-size:.82rem;color:var(--ink2);line-height:1.5}
+  .mtopnav-menu a:hover{background:var(--accent-soft);color:var(--accent)}
+  .mtopnav-menu a.on{background:var(--accent);color:var(--on-accent);font-weight:600}
+  /* 跳转落点不被顶部导航挡：目标块上方留导航实高+缓冲（JS 量测写入 --mtnh，字号放大自适应） */
+  section{scroll-margin-top:calc(var(--mtnh,56px) + 12px)}
+  .day{scroll-margin-top:calc(var(--mtnh,56px) + 14px)}
+}
+
 /* ---------- 入场动效 ---------- */
 html.js section .card,html.js section .day,html.js section .tip,html.js .wday,html.js .sos{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
 html.js section.in .card,html.js section.in .day,html.js section.in .tip,html.js section.in .wday,html.js section.in .sos{opacity:1;transform:none}
@@ -168,7 +197,8 @@ html.js section.in .card,html.js section.in .day,html.js section.in .tip,html.js
 
 /* ---------- 打印 ---------- */
 @media print{
-  .side,.toolbar,.backtop,.skip{display:none}
+  .side,.toolbar,.backtop,.skip,.mtopnav,.mtopnav-menu{display:none}
+  body{padding-top:0}
   main{margin-left:0}
   body{background:#fff;font-size:12pt}
   .wrap{max-width:100%;padding:0}
@@ -186,6 +216,13 @@ b,strong{color:var(--ink)}
 </head>
 <body>
 <a class="skip" href="#main">跳到主要内容</a>
+<div class="mtopnav" id="mtopnav" role="navigation" aria-label="手机顶部导航">
+  <span class="mtopnav-now" id="mtnNow"></span>
+  <button class="mbtn" id="mtnDaysBtn" aria-expanded="false" aria-controls="mtnDaysMenu">行程 ▾</button>
+  <button class="mbtn" id="mtnTocBtn" aria-expanded="false" aria-controls="mtnTocMenu">目录 ☰</button>
+</div>
+<div class="mtopnav-menu" id="mtnDaysMenu" aria-label="按天跳转"></div>
+<div class="mtopnav-menu" id="mtnTocMenu" aria-label="全册目录"></div>
 <div class="toolbar" role="group" aria-label="阅读工具">
   <button class="tbtn" id="fontDec" aria-label="字号调小">A−</button>
   <button class="tbtn" id="fontInc" aria-label="字号调大">A＋</button>
@@ -343,6 +380,93 @@ b,strong{color:var(--ink)}
     bt.classList.toggle("show", window.scrollY > 600);
   }, { passive:true });
   bt.addEventListener("click", function(){ window.scrollTo({ top:0, behavior:"smooth" }); });
+
+  /* ---------- 7. 手机顶部导航（≤900px）：当前章节/按天/目录，全部从本册内容自动生成 ---------- */
+  var nav = document.getElementById("mtopnav");
+  if (!nav) return;
+  var daysMenu = document.getElementById("mtnDaysMenu"),
+      tocMenu = document.getElementById("mtnTocMenu"),
+      nowEl = document.getElementById("mtnNow"),
+      daysBtn = document.getElementById("mtnDaysBtn"),
+      tocBtn = document.getElementById("mtnTocBtn");
+
+  /* 章节标题表：main section → 标题文本（当天数/板块变化时零维护） */
+  var secTitle = {};
+  Array.prototype.forEach.call(document.querySelectorAll("main section[id]"), function(s){
+    var h = s.querySelector("h1,h2,.day-head h3,.day-head");
+    var t = (h ? h.textContent : "").replace(/\s+/g, " ").trim();
+    secTitle[s.id] = t || s.id;
+  });
+
+  /* 按天菜单：section id 以 day 开头（自动天数，多天不挤一排——下拉列表） */
+  var dh = ['<div class="mtn-label">按天跳转</div>'];
+  Array.prototype.forEach.call(document.querySelectorAll('main section[id^="day"]'), function(s){
+    dh.push('<a href="#' + s.id + '">' + secTitle[s.id] + "</a>");
+  });
+  if (dh.length > 1) daysMenu.innerHTML = dh.join("");
+  else daysBtn.style.display = "none";
+
+  /* 目录菜单：本册实际存在的板块 = 左侧栏 nav 链接（单一直接来源，不另维护清单） */
+  var toc = ['<div class="mtn-label">目录</div>'];
+  Array.prototype.forEach.call(document.querySelectorAll(".side nav a"), function(a){
+    toc.push('<a href="' + a.getAttribute("href") + '">' + a.textContent.trim() + "</a>");
+  });
+  tocMenu.innerHTML = toc.join("");
+
+  function closeMenus(){
+    daysMenu.classList.remove("open"); tocMenu.classList.remove("open");
+    daysBtn.setAttribute("aria-expanded", "false"); tocBtn.setAttribute("aria-expanded", "false");
+  }
+  function bindToggle(btn, menu){
+    btn.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var was = menu.classList.contains("open");
+      closeMenus();
+      if (!was){ menu.classList.add("open"); btn.setAttribute("aria-expanded", "true"); }
+    });
+  }
+  bindToggle(daysBtn, daysMenu);
+  bindToggle(tocBtn, tocMenu);
+  /* 点菜单内链接 → 跳转后自动收起；点页面其他处 → 收起 */
+  [daysMenu, tocMenu].forEach(function(m){
+    m.addEventListener("click", function(ev){
+      if (ev.target.closest && ev.target.closest("a")) closeMenus();
+    });
+  });
+  document.addEventListener("click", function(ev){
+    if (!nav.contains(ev.target) && !(ev.target.closest && ev.target.closest(".mtopnav-menu"))) closeMenus();
+  });
+
+  /* 当前章节：视口顶部（导航下沿）所在 section → 标题 + 两菜单高亮 */
+  function curId(){
+    var h = parseFloat(document.documentElement.style.getPropertyValue("--mtnh")) || 56;
+    var y = window.scrollY + h + 40, cur = null;
+    Array.prototype.forEach.call(document.querySelectorAll("main section[id]"), function(s){
+      /* 文档坐标=视口坐标+scrollY（offsetTop 受 offsetParent/transform 体系干扰，实测滞后一个 section） */
+      if (s.getBoundingClientRect().top + window.scrollY <= y) cur = s.id;
+    });
+    return cur;
+  }
+  function updateNow(){
+    var id = curId();
+    if (!id) return;
+    nowEl.textContent = secTitle[id] || "";
+    [daysMenu, tocMenu].forEach(function(m){
+      Array.prototype.forEach.call(m.querySelectorAll("a"), function(a){
+        a.classList.toggle("on", a.getAttribute("href") === "#" + id);
+      });
+    });
+  }
+  window.addEventListener("scroll", updateNow, { passive: true });
+
+  /* 导航实高 → --mtnh：跳转 scroll-margin 与正文顶垫同步（字号放大/换行自适应） */
+  function setH(){
+    document.documentElement.style.setProperty("--mtnh", nav.offsetHeight + "px");
+  }
+  setH();
+  window.addEventListener("resize", function(){ setH(); updateNow(); });
+  window.addEventListener("load", function(){ setH(); updateNow(); });
+  updateNow();
 })();
 </script>
 <script>

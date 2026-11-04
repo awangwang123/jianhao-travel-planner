@@ -123,7 +123,7 @@ def r_day_brief(brief, slots, I):
 
     head = brief.get("head") or ["段", "时间窗", "方式与时长", "边界与余量"]
     widths = brief.get("widths") or ["16%", "21%", "29%", "34%"]
-    trs = []
+    trs, cards = [], []
     for i, r in enumerate(brief.get("rows") or []):
         t1 = cell_t(r.get("from"), "row%d.from" % i)
         t2 = cell_t(r.get("to"), "row%d.to" % i)
@@ -132,14 +132,36 @@ def r_day_brief(brief, slots, I):
         edge = _fill_tr(r.get("edge", ""), I, "row%d.edge" % i)
         trs.append("    <tr><td><b>%s</b></td><td>%s</td><td>%s</td><td>%s</td></tr>"
                    % (esc(r.get("seg", "")), win, esc(how), esc(edge)))
+        # 手机卡片形态（WW 11-04 拍板：四列表格手机挤字，改逐条卡片；桌面保留表格）
+        verb = (r.get("verb") or "").strip()
+        head_l = esc(t1 + (" " + verb if verb else ""))
+        to_disp = ""
+        if t2:
+            cell = r.get("to") or {}
+            # t2 的 add 分支已带「约」前缀（cell_t），直取即可——再拼一次变「约 约」（已犯即改）
+            to_disp = t2
+        c = ['  <div class="bcard">',
+             '    <div class="bcard-h"><span class="bcard-t">%s</span><b>%s</b>%s</div>'
+             % (head_l, esc(r.get("seg", "")), ('<span class="bcard-to">→ %s</span>' % to_disp) if to_disp else ""),
+             '    <div class="bcard-how">%s</div>' % esc(how)]
+        if edge:
+            c.append('    <div class="bcard-edge">%s</div>' % esc(edge))
+        c.append("  </div>")
+        cards.append("\n".join(c))
     cg = "".join('<col style="width:%s">' % w for w in widths)
     th = "".join("<th>%s</th>" % esc(c) for c in head)
-    out = ['<div style="overflow-x:auto"><table class="tb">',
+    out = ['<div style="overflow-x:auto"><table class="tb day_brief_tb">',
            "  <colgroup>%s</colgroup>" % cg,
            "  <thead><tr>%s</tr></thead>" % th,
-           "  <tbody>", "\n".join(trs), "  </tbody>", "</table></div>"]
+           "  <tbody>", "\n".join(trs), "  </tbody>", "</table></div>",
+           '<div class="brief-cards">', "\n".join(cards)]
     if brief.get("note"):
-        out.append('<p style="font-size:13px;color:#5a5246;margin:.3em 0 0">%s</p>' % esc(brief["note"]))
+        note_html = '<p style="font-size:13px;color:#5a5246;margin:.3em 0 0">%s</p>' % esc(brief["note"])
+        out.append('  <div class="bcard-note">%s</div>' % esc(brief["note"]))
+        out.append("</div>")
+        out.append(note_html)
+    else:
+        out.append("</div>")
     return "\n".join(out)
 
 
@@ -484,7 +506,12 @@ def r_drive(data):
             ap = tr.get("applicability") or {}
             dep = _disp(ap.get("dep_time"), "drive ref %s dep_time" % tr.get("id"))
             arr = _disp(ap.get("arr_time"), "drive ref %s arr_time" % tr.get("id"))
+            # 全列 {dep}/{arr} 占位符填充（v1.20）：任意列手写正本当前值=改班次必漂移
+            # （M7 实测「怎么走」列手写 18:26 残留案）——占位符才是单源；无占位符的行不受影响
             if dep and arr:
+                for ci, cellv in enumerate(row):
+                    if isinstance(cellv, str) and ("{dep}" in cellv or "{arr}" in cellv):
+                        row[ci] = cellv.replace("{dep}", dep).replace("{arr}", arr)
                 cell = "%s→%s" % (dep, arr)
                 m1, m2 = _hhmm_min(dep), _hhmm_min(arr)
                 if m1 is not None and m2 is not None:
@@ -766,6 +793,20 @@ def main():
                   ".pp figure:only-child{flex:1 1 100%}"
                   ".pp img{max-width:100%;height:auto;display:block}"
                   "@media(max-width:768px){.pp figure{flex-basis:100%}}"
+                  # day_brief 节奏短表双形态：桌面表格（骨架原 .tb），≤900px 切逐条卡片（WW 11-04：四列手机挤字）
+                  ".brief-cards{display:none}"
+                  "@media(max-width:900px){"
+                  ".brief-cards{display:grid;gap:10px;margin-top:14px}"
+                  ".day_brief_tb{display:none}"
+                  ".bcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}"
+                  ".bcard-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}"
+                  ".bcard-h b{font-size:.9rem}"
+                  ".bcard-t{font-size:.8rem;font-weight:700;color:var(--accent);white-space:nowrap}"
+                  ".bcard-to{font-size:.72rem;color:var(--ink3);white-space:nowrap}"
+                  ".bcard-how{font-size:.82rem;color:var(--ink2);margin-top:4px;line-height:1.7}"
+                  ".bcard-edge{font-size:.78rem;color:#6B5A22;background:var(--warn-soft);border-radius:8px;padding:6px 10px;margin-top:6px;line-height:1.6}"
+                  ".bcard-note{font-size:.75rem;color:var(--ink3);line-height:1.7}"
+                  "}"
                   "</style>\n</head>", 1)
     import os as _os
     _d = _os.path.dirname(_os.path.abspath(OUT))
