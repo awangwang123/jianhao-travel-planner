@@ -188,7 +188,9 @@ def r_day(d, I):
     slot_text = " ".join((s.get("text") or "")[:40] for s in (d.get("slots") or []))
     slot_refs = {s.get("ref") for s in (d.get("slots") or []) if s.get("ref")}
     for s in d.get("slots") or []:
-        body = s.get("text", "")  # 受信数据：家族形态文本内嵌 <b> 加粗（esc 会把加粗变字面文本）
+        # v1.20 四批（M8 盲测）：slot text 加 {tr:ID.路径.字段} 跨记录引用兜底——此前只有本 slot ref
+        # 指向的记录能填 {dep}/{arr}，餐型 slot 引班次时刻（如返程晚餐 {arr}）填不出来（fail-visible）
+        body = _fill_tr(s.get("text", ""), I, "days[%s] slot %s" % (d.get("day"), s.get("id")))
         ref = s.get("ref")
         if ref:  # R9：班次时刻文案占位符 {dep}/{arr} 由正本填充（同一班次时刻不手写两处）
             body = fill_slot_text(body, I.get(ref), "days[%s] slot %s" % (d.get("day"), s.get("id")))
@@ -542,10 +544,11 @@ def r_overview_body(data):
     parts.append(O["weather_note"])
     # B17（Codex 十轮）：总览图同入 .pp 容器（img max-width 约束全局生效，裸 1280px 图=四视口溢出真凶）
     parts.append('<div class="pp" style="display:flex;flex-wrap:wrap;gap:8px">' + O["figure_html"] + "</div>")
-    parts.append(O["tail_note"])
     # B16（Codex 六轮）：总览动线图=家族基准件（无则缺件，由数据提供 route_svg_html）
     if O.get("route_svg_html"):
         parts.append(O["route_svg_html"])
+    # v1.20 四批（M8 盲测 T7）：tail_note 只渲染一次——此前 545/549 两次无条件 append（71ddfa6 只修了
+    # 457/461 的 B16 路径，此处为另一处重复，景德镇册返程说明渲染 2 次实锤）
     parts.append(O["tail_note"])
     return "\n".join(parts)
 
@@ -772,8 +775,10 @@ def main():
             h = h[:gm.end()] + "\n" + B["page_tail"] + "\n</body></html>"
     else:
         # 新册：回填册 tailpad 在基线 page_tail 切块里；新册无 page_tail 须自补（checklist ⑧ 移动端工具条占位）
+        # v1.20 四批（M8 盲测 T8）：id="tailpad" 对齐 TEMPLATE 字面（此前 class= 与模板要求不一致，
+        # 制作侧人工核对 TEMPLATE 时判「渲染器不输出」即由此起；checklist 子串判定两种都过，属口径分裂）
         if "tailpad" not in h:
-            h = h.replace("</body>", '<div class="tailpad" style="height:96px"></div>\n</body>', 1)
+            h = h.replace("</body>", '<div id="tailpad" style="height:96px"></div>\n</body>', 1)
     # 侧边栏+title=基线原文直渲（nav 短主题/底部署注对齐）
     if B.get("aside"):
         h = re.sub(r'<aside class="side">.*?</aside>', lambda m: B["aside"], h, count=1, flags=re.S)

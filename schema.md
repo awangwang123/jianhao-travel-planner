@@ -159,7 +159,19 @@
 
 `[{"id":"a001","file":"…","credit":"…","license":"…","pool_ref":"…"}]`（M2 渲染接入，schema 先占位）
 
-## 5b. 结构化板块字段契约（v1.20 新增，V23 生成前预检）
+### eat_structured（v1.20 四批补契，M8 景德镇册试错 3 轮的教训正本）
+
+允许键（白名单，白名单外=V23 FAIL）：`eyebrow, h2, lead, groups, tail_title, tail_body, tail_cards, tail_footer`。**分组键名是 `groups` 不是 sections；尾部两小节是 `tail_title/tail_body` 不是 casual**。
+
+`groups[]` 每项：`{title:str(必填), widths:[str], cols:[str], rows:[[str]]}`——**rows 是数组的数组**（每行=字符串数组，列数=cols 数）；组内主选行用 `<b>…</b>` 包店名，备选行不加粗。`tail_cards[]`=原生 HTML `<div class="tip">…</div>` 字符串。可填示例见 `template_trip_data.json`（【示例】行整行替换即可）。
+
+### 四表契约（stay/ticket/drive/gift_structured，v1.20 四批补契）
+
+允许键（白名单）：`eyebrow, h2, lead, table, tail_notes`。**顶层禁放 rows**（M8 册制作侧第一轮修错层级的残留，渲染器静默忽略=死数据，V23 已会报）。
+
+`table`：`{widths:[str], cols:[str], rows:[[str]]}`——**rows 是数组的数组**；每行列数=cols 数。各表推荐列：住宿 `[晚, 说明]`；门票 `[项目, 价格, 预约方式, 关键时间]`；交通 `[段, 怎么走·怎么选, 兜底]`；特产 `[手信, 说明]`。行内可嵌 `<b>` 加粗（受信数据放行内联 HTML）。
+
+
 
 骨架初始态（空容器）合法；**有值即按下述形态填**，形态错误在数据闸被 V23 一次报出（字段路径+期望类型）——不再生成后 KeyError 再读源码猜结构（M7 实测 D2/D3/D4 三类崩溃的正本文档）。
 

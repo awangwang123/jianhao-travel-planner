@@ -519,11 +519,71 @@ def check_structured_fields(data, v):
                     errs.append((w + ".rows[%d].%s.ref" % (ri, side),
                                  "slot %r 不在本日 slots（%s）——引用必须挂本日" % (ref, sorted(by_id)[:4])))
 
+    # v1.20 四批（M8 盲测）：eat/四表结构契约——键名白名单 + 行格式（数组的数组），自创键/对象行一次报出。
+    # 背景：景德镇首测 7 轮返工，主因=eat.groups 与四表 rows 形态无契约（自创 sections 键、四表 dict 行
+    # 渲染空壳且检查器只抓 stay 一处）——此处让「键名、层级、行格式」在生成前一次全指出。
+    def _rows_matrix_check(w, rows, cols_n):
+        if not isinstance(rows, list):
+            errs.append((w + ".rows", "期望数组的数组（每行=字符串数组，与 cols 等长），实际 %s——"
+                                      "dict/对象形态会渲染成空壳行（M8 景德镇册实锤）" % type(rows).__name__))
+            return
+        for ri, row in enumerate(rows):
+            if not isinstance(row, list) or not all(_is_str(x) for x in row):
+                errs.append((w + ".rows[%d]" % ri, "期望字符串数组，实际 %r" % (str(row)[:60],)))
+            elif cols_n and len(row) != cols_n:
+                errs.append((w + ".rows[%d]" % ri, "该行 %d 列，cols %d 列，数量不一致" % (len(row), cols_n)))
+
+    _TBL_KEYS = ("eyebrow", "h2", "lead", "table", "tail_notes")
+    for _name in ("stay_structured", "ticket_structured", "drive_structured", "gift_structured"):
+        s = data.get(_name)
+        if not s:
+            continue
+        w = _name
+        if not isinstance(s, dict):
+            errs.append((w, "期望 dict（键：%s），实际 %s" % (list(_TBL_KEYS), type(s).__name__)))
+            continue
+        unknown = sorted(set(s.keys()) - set(_TBL_KEYS))
+        if unknown:
+            errs.append((w, "未知键 %s（允许键：%s）——自创键渲染器不读取，属静默死数据"
+                         % (unknown, list(_TBL_KEYS))))
+        tb = s.get("table")
+        if tb is None:
+            errs.append((w + ".table", "必填 dict{widths,cols,rows}"))
+        elif not isinstance(tb, dict):
+            errs.append((w + ".table", "期望 dict{widths,cols,rows}，实际 %s" % type(tb).__name__))
+        else:
+            ws_, cs_ = tb.get("widths"), tb.get("cols")
+            if isinstance(ws_, list) and isinstance(cs_, list) and len(ws_) != len(cs_):
+                errs.append((w + ".table", "widths(%d) 与 cols(%d) 数量不一致" % (len(ws_), len(cs_))))
+            _rows_matrix_check(w + ".table", tb.get("rows"),
+                               len(cs_) if isinstance(cs_, list) else 0)
+
+    e = data.get("eat_structured")
+    if e and isinstance(e, dict):
+        w = "eat_structured"
+        _EAT_KEYS = ("eyebrow", "h2", "lead", "groups", "tail_title", "tail_body", "tail_cards", "tail_footer")
+        unknown = sorted(set(e.keys()) - set(_EAT_KEYS))
+        if unknown:
+            errs.append((w, "未知键 %s（允许键：%s）——注意：分组键名是 groups 不是 sections，"
+                            "尾部两小节是 tail_title/tail_body 不是 casual（M8 景德镇册试错 3 轮的坑）"
+                         % (unknown, list(_EAT_KEYS))))
+        for gi, g in enumerate(e.get("groups") or []):
+            gw = w + ".groups[%d]" % gi
+            if not isinstance(g, dict):
+                errs.append((gw, "期望 dict{title,widths,cols,rows}，实际 %s" % type(g).__name__))
+                continue
+            if not (g.get("title") or "").strip():
+                errs.append((gw + ".title", "必填（分组标题，如「Day1 · 落地…」）"))
+            cols = g.get("cols")
+            if isinstance(g.get("widths"), list) and isinstance(cols, list) and len(g["widths"]) != len(cols):
+                errs.append((gw, "widths(%d) 与 cols(%d) 数量不一致" % (len(g["widths"]), len(cols))))
+            _rows_matrix_check(gw, g.get("rows"), len(cols) if isinstance(cols, list) else 0)
+
     if errs:
         for w, msg in errs:
             v.fail("V23", w, msg)
     else:
-        v.ok("V23", "结构化字段形态合法（prep.cards/tips.tail_cards/boost.items/day_brief）")
+        v.ok("V23", "结构化字段形态合法（prep.cards/tips.tail_cards/boost.items/day_brief/eat.groups/四表 rows+键白名单）")
 
 def route_check(data, v):
     """V15（v1.2 新增，FAIL 级）: routes 导览图路线数据毒化闸——
