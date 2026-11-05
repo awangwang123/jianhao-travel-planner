@@ -2,8 +2,10 @@
 """pipeline.py —— v1.2 统一制作入口（任务书④：整合制作入口+自动计时，替代每册临时写脚本）
 用法:
   py tools/pipeline.py full <trip_data.json> <输出.html> [标题]
-      全链: validate → gen → apply_routes(有 routes 时) → checklist
+      全链: validate → route_map(有 map_spec 时出图回写数据) → gen → apply_routes(旧 routes 兼容) → checklist
       自动计时（timer start/end 落 timer_records.jsonl），各环节失败即停并报环节名
+      v1.20 三批（WW/Codex 11-05）：地图工具接入正式入口——改行程后同一入口重跑，地图随数据同步，
+      不再允许「手动跑 route_map 把结果算作入口完成」；审计失败(孤儿时刻/出界)即停链。
   py tools/pipeline.py check <成品.html>            # 只跑 checklist
   py tools/pipeline.py validate <trip_data.json>    # 只跑数据闸
 各环节输出原文直通（失败原文可直接贴给用户）。"""
@@ -58,18 +60,19 @@ def main():
     outcome = "OK"
     try:
         run("① 数据闸", [PY, os.path.join(HERE, "validate_trip_data.py"), data])
-        run("② 渲染 gen", [PY, os.path.join(HERE, "gen_roadbook.py"), data, out_html])
-        routes_info = run("③ 导览图注入", [PY, os.path.join(HERE, "apply_routes.py"), data, out_html])
+        run("② 地图生成 route_map", [PY, os.path.join(HERE, "route_map.py"), data])
+        run("③ 渲染 gen", [PY, os.path.join(HERE, "gen_roadbook.py"), data, out_html])
+        routes_info = run("④ 旧路线注入(兼容)", [PY, os.path.join(HERE, "apply_routes.py"), data, out_html])
         applied = "applied" in routes_info
         vis = ["--visual"] if "--visual" in sys.argv else []
-        run("④ 成品闸", [PY, os.path.join(HERE, "checklist.py"), out_html] + vis)
+        run("⑤ 成品闸", [PY, os.path.join(HERE, "checklist.py"), out_html] + vis)
     except SystemExit:
         outcome = "FAILED"
         timer_mod.end_timer(rec_tag, outcome=outcome)
         raise
     human = timer_mod.end_timer(rec_tag, outcome=outcome)
-    path_report = ("导览图新路径已执行并注入" if applied
-                   else "旧数据兼容路径（routes 缺失，导览图未生成）——与执行成功分开报告")
+    path_report = ("地图由入口生成(route_map)＋旧路线注入" if applied
+                   else "地图由入口生成(route_map)；routes 缺失走旧数据兼容(无旧路线注入)")
     print("⏱ 本链耗时: %s（自动计时落 timer_records.jsonl）｜路径: %s" % (human, path_report))
 
 
