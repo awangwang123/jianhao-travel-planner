@@ -97,11 +97,14 @@ def _fill_tr(text, I, where):
 
 
 def r_day_brief(brief, slots, I):
-    """v3.57 day_brief 节奏短表（任务书二-3：活动起止/接驳时长/午餐窗口/运营截止/余量逐段一表）。
+    """v3.58 day_brief 节奏短表（任务书二-3：活动起止/接驳时长/午餐窗口/运营截止/余量逐段一表）。
     时刻单源：from/to 用 slot 引用 {"ref":"d2s3"}（直取该 slot 时刻）或 {"ref":"d2s3","+add":45}
     （估抵=引用时刻+正文时长推算，渲染带「约」）——改 slots 短表自动同步，不产生第二处手写时刻。
     how/edge 文本支持 {tr:ID.applicability.字段} 占位符（经 _fill_tr 查正本填充）。
-    行字段：seg 段名 / from / to(可省) / how 方式与时长 / edge 边界·余量(可省)；head/widths 可选。"""
+    行字段：seg 段名 / from / to(可省) / how 方式与时长 / edge 边界·余量(可省)；head/widths 可选。
+    手机双形态（WW 11-05 拍板 v7，替代 11-04 卡片）：≤900px 切两列表格 .brief-m——
+    行可带 grp（连续同值归入分组行）/ mobile_t（弹性表述模板，{from}/{to}=单源时刻占位）/ hard（守时项加粗）；
+    brief.lead=导语（桌面手机共用）。旧数据无新字段时行为向后兼容（无分组/直排时刻）。"""
     by_id = {s.get("id"): s for s in slots if s.get("id")}
 
     def cell_t(cell, where):
@@ -123,7 +126,7 @@ def r_day_brief(brief, slots, I):
 
     head = brief.get("head") or ["段", "时间窗", "方式与时长", "边界与余量"]
     widths = brief.get("widths") or ["16%", "21%", "29%", "34%"]
-    trs, cards = [], []
+    trs, mrows, prev_grp = [], [], None
     for i, r in enumerate(brief.get("rows") or []):
         t1 = cell_t(r.get("from"), "row%d.from" % i)
         t2 = cell_t(r.get("to"), "row%d.to" % i)
@@ -132,36 +135,32 @@ def r_day_brief(brief, slots, I):
         edge = _fill_tr(r.get("edge", ""), I, "row%d.edge" % i)
         trs.append("    <tr><td><b>%s</b></td><td>%s</td><td>%s</td><td>%s</td></tr>"
                    % (esc(r.get("seg", "")), win, esc(how), esc(edge)))
-        # 手机卡片形态（WW 11-04 拍板：四列表格手机挤字，改逐条卡片；桌面保留表格）
-        verb = (r.get("verb") or "").strip()
-        head_l = esc(t1 + (" " + verb if verb else ""))
-        to_disp = ""
-        if t2:
-            cell = r.get("to") or {}
-            # t2 的 add 分支已带「约」前缀（cell_t），直取即可——再拼一次变「约 约」（已犯即改）
-            to_disp = t2
-        c = ['  <div class="bcard">',
-             '    <div class="bcard-h"><span class="bcard-t">%s</span><b>%s</b>%s</div>'
-             % (head_l, esc(r.get("seg", "")), ('<span class="bcard-to">→ %s</span>' % to_disp) if to_disp else ""),
-             '    <div class="bcard-how">%s</div>' % esc(how)]
-        if edge:
-            c.append('    <div class="bcard-edge">%s</div>' % esc(edge))
-        c.append("  </div>")
-        cards.append("\n".join(c))
+        # 手机两列表格（WW 11-05 拍板 v7 形态，替代 11-04 卡片）：grp 分组行 / mobile_t 弹性表述模板 /
+        # hard 守时加粗。时刻仍走 slots 单源（cell_t），mobile_t 只是表述模板（{from}/{to} 占位）。
+        grp = (r.get("grp") or "").strip()
+        if grp and grp != prev_grp:
+            mrows.append('<tr class="mgrp"><td colspan="2">%s</td></tr>' % esc(grp))
+        prev_grp = grp or prev_grp
+        mt = (r.get("mobile_t") or "").strip()
+        mt_disp = mt.replace("{from}", t1).replace("{to}", t2 or "") if mt else (win if t2 else t1)
+        tcls = "mt hard" if r.get("hard") else "mt"
+        name = esc(r.get("seg", ""))
+        how_html = ('<div class="mhow">%s</div>' % esc(how)) if how else ""
+        edge_html = ('<div class="medge">%s</div>' % esc(edge)) if edge else ""
+        mrows.append('<tr><td class="%s">%s</td><td class="ma"><b>%s</b>%s%s</td></tr>'
+                     % (tcls, mt_disp, name, how_html, edge_html))
     cg = "".join('<col style="width:%s">' % w for w in widths)
     th = "".join("<th>%s</th>" % esc(c) for c in head)
-    out = ['<div style="overflow-x:auto"><table class="tb day_brief_tb">',
+    lead_html = ('<p class="mlead">%s</p>' % esc(brief["lead"])) if brief.get("lead") else ""
+    out = [lead_html,
+           '<div style="overflow-x:auto"><table class="tb day_brief_tb">',
            "  <colgroup>%s</colgroup>" % cg,
            "  <thead><tr>%s</tr></thead>" % th,
            "  <tbody>", "\n".join(trs), "  </tbody>", "</table></div>",
-           '<div class="brief-cards">', "\n".join(cards)]
+           '<table class="brief-m">', "  <tbody>", "\n".join(mrows), "  </tbody>", "</table>"]
     if brief.get("note"):
         note_html = '<p style="font-size:13px;color:#5a5246;margin:.3em 0 0">%s</p>' % esc(brief["note"])
-        out.append('  <div class="bcard-note">%s</div>' % esc(brief["note"]))
-        out.append("</div>")
         out.append(note_html)
-    else:
-        out.append("</div>")
     return "\n".join(out)
 
 
@@ -793,19 +792,23 @@ def main():
                   ".pp figure:only-child{flex:1 1 100%}"
                   ".pp img{max-width:100%;height:auto;display:block}"
                   "@media(max-width:768px){.pp figure{flex-basis:100%}}"
-                  # day_brief 节奏短表双形态：桌面表格（骨架原 .tb），≤900px 切逐条卡片（WW 11-04：四列手机挤字）
-                  ".brief-cards{display:none}"
+                  # day_brief 节奏短表双形态：桌面表格（骨架原 .tb），≤900px 切 v7 两列表格（WW 11-05 拍板，
+                  # 替代 11-04 卡片）：grp 分组行 + mobile_t 弹性表述 + hard 守时加粗，时刻单源不变
+                  ".mlead{font-size:.82rem;color:var(--ink3);line-height:1.7;margin:.2em 0 .5em}"
+                  ".brief-m{display:none}"
                   "@media(max-width:900px){"
-                  ".brief-cards{display:grid;gap:10px;margin-top:14px}"
                   ".day_brief_tb{display:none}"
-                  ".bcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}"
-                  ".bcard-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}"
-                  ".bcard-h b{font-size:.9rem}"
-                  ".bcard-t{font-size:.8rem;font-weight:700;color:var(--accent);white-space:nowrap}"
-                  ".bcard-to{font-size:.72rem;color:var(--ink3);white-space:nowrap}"
-                  ".bcard-how{font-size:.82rem;color:var(--ink2);margin-top:4px;line-height:1.7}"
-                  ".bcard-edge{font-size:.78rem;color:#6B5A22;background:var(--warn-soft);border-radius:8px;padding:6px 10px;margin-top:6px;line-height:1.6}"
-                  ".bcard-note{font-size:.75rem;color:var(--ink3);line-height:1.7}"
+                  ".brief-m{display:table;width:100%;border-collapse:collapse;margin-top:4px}"
+                  ".brief-m td{vertical-align:top;padding:8px 0;border-bottom:1px solid var(--line)}"
+                  ".brief-m tr.mgrp td{border-bottom:none;padding:16px 0 2px;font-size:.82rem;"
+                  "font-weight:700;color:var(--accent);letter-spacing:.08em}"
+                  ".brief-m td.mt{width:96px;min-width:96px;white-space:nowrap;font-size:.75rem;"
+                  "color:var(--ink2);line-height:1.5;padding-right:8px}"
+                  ".brief-m td.mt.hard{font-weight:700;color:var(--ink)}"
+                  ".brief-m td.ma{line-height:1.6;padding-left:2px}"
+                  ".brief-m td.ma b{font-size:.9rem}"
+                  ".brief-m .mhow{font-size:.8rem;color:var(--ink2);margin-top:2px;line-height:1.7}"
+                  ".brief-m .medge{font-size:.76rem;color:#6B5A22;margin-top:2px;line-height:1.6}"
                   "}"
                   "</style>\n</head>", 1)
     import os as _os
