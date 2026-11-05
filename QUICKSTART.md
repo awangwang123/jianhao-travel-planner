@@ -14,6 +14,12 @@ py tools/pipeline.py new 我的目的地 --days 3 --start 2026-11-06
 # 2. 填数据（按 schema.md「字段速查」；实查规则见 sources_playbook.md）
 #    ★ 填完先跑简表，过了再配图扩写——路线/费用/节奏问题在这一步暴露最便宜
 py tools/pipeline.py outline pkg_work/trip_data.json
+#
+#    填写速记（v1.20，M8/M9 两册踩坑正本——枚举以校验器为准，禁照旧文档默写）：
+#    · verify_status 三值 = verified / estimated / pending（没有 unverified）
+#    · 全 CNY 册 meta.fx 整表可省略（按 1:1）；含外币才必填
+#    · 四表(stay/ticket/drive/gift)行=数组的数组、只放 table.rows（顶层 rows 是死数据，V23 拦）
+#    · 美食分组键=groups（不是 sections）；模板里没有的键不要自创，模板示例行整行替换即可
 
 # 3. 配图（成品每日配图是硬要求；无 API key 用 Commons）
 py tools/fetch_images.py search "洛阳 龙门石窟" --limit 5

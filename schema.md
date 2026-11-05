@@ -15,7 +15,7 @@
 | `stays[]` | 住宿必填 | `id/name/text/applicability{checkin,checkout,nights}` |
 | `meals[]` | ✓ | `id/name/text`（人均写 text） |
 | `transports[]` | ✓ | `id/name/applicability{mode,dep_time,arr_time}/text`；mode∈高铁/地铁/巴士等中文口径 |
-| `expenses[]` | ✓ | `id/ref/category/label` + **金额二选一：`amount`（定值）或 `amount_min`+`amount_max`（区间）**；`unit∈每人/每单/每间夜`；`qty`；`verify_status∈verified/estimated/unverified`；自选项加 `billing:{optional:true,reason}` |
+| `expenses[]` | ✓ | `id/ref/category/label` + **金额二选一：`amount`（定值）或 `amount_min`+`amount_max`（区间）**；`unit∈每人/每单/每间夜`；`qty`；`verify_status∈verified/estimated/pending`（**校验器真枚举，v1.20 对齐——此前文档误写 unverified，M8/M9 两册照文档填均被 FAIL**）；自选项加 `billing:{optional:true,reason}` |
 | `days[].slots[]` | ✓ | `id/t/type∈meal,transport,spot,checkin,note/ref/text`；`t` 可为 `"HH:MM"` 或引用 `{"tr_ref":"tr001","field":"dep_time"}` |
 | `days[].meals/stay/cam/knowhow/planb` | ✓ | 三餐落点/住宿引用/机位（2-4 处/天）/冷知识/雨天方案 |
 | `days[].svg_html/photos_html` | ✓ | 每日配图 HTML（base64 内嵌）；空=成品闸 FAIL |
@@ -57,7 +57,7 @@
 | pax | {adults,children,note} | ✅ | 人数 |
 | tier | 枚举 | ✅ | `fast`/`standard`/`premium`（档位感知用） |
 | timezones | [{area,utc_offset,vs_home_hours}] | ✅ | 时差；`utc_offset` 格式 `+HH:MM`；`vs_home_hours` 数字（意冬令时=-7） |
-| fx | [{base,quote,rate,checked_at,source}] | ✅ | 汇率表；预算折算唯一依据；**目标币种缺汇率=校验 FAIL**（无法折算禁出预算） |
+| fx | [{base,quote,rate,checked_at,source}] | ◆条件必填 | 汇率表；预算折算唯一依据。**全 CNY 册可整表省略（工具按 1:1 处理，v1.20 对齐——此前 ✅ 必填口径坑了国内册，M9 实测）**；含外币币种时必填，**目标币种缺汇率=校验 FAIL**（无法折算禁出预算） |
 | customize | {play_start} | — | 游玩开始锚点（V17，v1.2 R5 终版）：`play_start` 默认游玩开始线（`"09:30"`，09:30—10:00 开始游玩）。**起床不入册**：R4 的 `wake_earliest` 键作废（读到仅 WARN）；早餐/交通按需安排、可在此前，不校验 |
 | schema_version | string | ✅ | `"1.0"` |
 
