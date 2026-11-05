@@ -15,7 +15,7 @@
 | `stays[]` | 住宿必填 | `id/name/text/applicability{checkin,checkout,nights}` |
 | `meals[]` | ✓ | `id/name/text`（人均写 text） |
 | `transports[]` | ✓ | `id/name/applicability{mode,dep_time,arr_time}/text`；mode∈高铁/地铁/巴士等中文口径 |
-| `expenses[]` | ✓ | `id/ref/category/label` + **金额二选一：`amount`（定值）或 `amount_min`+`amount_max`（区间）**；`unit∈每人/每单/每间夜`；`qty`；`verify_status∈verified/estimated/pending`（**校验器真枚举，v1.20 对齐——此前文档误写 unverified，M8/M9 两册照文档填均被 FAIL**）；自选项加 `billing:{optional:true,reason}` |
+| `expenses[]` | ✓ | `id/ref/category/label` + **金额二选一：`amount`（定值）或 `amount_min`+`amount_max`（区间）**；`unit∈每人/每间夜/每晚/每次/每天/每单`（**校验器全 6 值，v1.20 补全——此前文档只列 3 值**）；`qty`；`verify_status∈verified/estimated/pending`（**校验器真枚举，v1.20 对齐——此前文档误写 unverified，M8/M9 两册照文档填均被 FAIL**）；`category∈机票/签证/住宿/城际交通/市内交通/门票/餐饮/杂项`；`tier∈主选/备选/可选`（预算合计只取主选）；自选项加 `billing:{optional:true,reason}` |
 | `days[].slots[]` | ✓ | `id/t/type∈meal,transport,spot,checkin,note/ref/text`；`t` 可为 `"HH:MM"` 或引用 `{"tr_ref":"tr001","field":"dep_time"}` |
 | `days[].meals/stay/cam/knowhow/planb` | ✓ | 三餐落点/住宿引用/机位（2-4 处/天）/冷知识/雨天方案 |
 | `days[].svg_html/photos_html` | ✓ | 每日配图 HTML（base64 内嵌）；空=成品闸 FAIL |
