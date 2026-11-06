@@ -1144,7 +1144,9 @@ def budget_calc(data, v):
     """V10 + 预算试算。返回 summary dict（V10 FAIL 时仍返回尽力而为的部分结果）。"""
     mt = data.get("meta") or {}
     fx = mt.get("fx") or []
-    target = fx[0].get("quote") if fx else None
+    # v1.20 七批（Codex 复核 11-06）：fx 缺省=目标币种 CNY 按 1:1（全人民币册免填，schema 已对齐），
+    # 外币缺汇率仍 FAIL——校验/预算/页面三处统一口径
+    target = fx[0].get("quote") if fx else "CNY"
     rates = {(f.get("base"), f.get("quote")): f.get("rate") for f in fx}
     pax_all = (mt.get("pax") or {}).get("adults", 0) + (mt.get("pax") or {}).get("children", 0)
 

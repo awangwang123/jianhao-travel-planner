@@ -224,23 +224,26 @@ def r_day(d, I):
 
 def r_overview(data):
     m = data["meta"]
-    fx = m["fx"][0]
+    # v1.20 七批（Codex 复核 11-06）：全 CNY 册 fx 整表可省略——此处此前 m["fx"][0] 直接 IndexError
+    fx = m.get("fx") or []
     lead1 = ("%s｜%s → %s｜%s｜%s" % (
         m["destination"], m["home_city"],
         m["date_window"]["start"] + "~" + m["date_window"]["end"],
         "%d 成人" % m["pax"]["adults"] if not m["pax"].get("children") else "%d 大 %d 小" % (
             m["pax"]["adults"], m["pax"]["children"]),
         {"fast": "快速档", "standard": "标准档", "premium": "精装档"}.get(m.get("tier"), m.get("tier"))))
-    lead2 = ("时差 %s（%s）｜汇率 %s→%s %.3f（%s 查）" % (
+    lead2 = ("时差 %s（%s）｜%s" % (
         m["timezones"][0]["utc_offset"], m["timezones"][0]["area"],
-        fx["base"], fx["quote"], fx["rate"], fx["checked_at"]))
+        ("汇率 %s→%s %.3f（%s 查）" % (fx[0]["base"], fx[0]["quote"], fx[0]["rate"], fx[0]["checked_at"]))
+        if fx else "全程 CNY 按 1:1 计（无外币支出）"))
     return "\n".join([
         '<p class="eyebrow">总览</p>',
         '<h1 style="font-size:2rem;margin:.2em 0 .3em">%s</h1>' % esc(m["title"]),
         '<p class="lead">%s</p>' % esc(lead1),
         '<p class="lead">%s</p>' % esc(lead2),
-        '<div class="warn-line">⚠️ 本页由 P3 渲染引擎 v0.1 从 trip_data.json 生成——'
-        '「改一处数据、全页更新」试点（M2 里程碑 1）。</div>',
+        # v1.20 七批：脱敏加固（死路径亦不得留工程字样——未来激活即泄露；M9 评审口径）
+        '<div class="warn-line">⚠️ 本页由包内渲染工具从 trip_data.json 生成——'
+        '「改一处数据、全页更新」。</div>',
     ])
 
 
@@ -248,9 +251,11 @@ def r_cost(data):
     """v0.4/M4 新册预算=程序按费用明细账细算（回填册走基线原版直渲，本函数不接）
     形态对齐家族基准（宏村/意册）：人话标题+口径 lead+三卡+明细表+尾注（含隐藏成本行）"""
     m = data["meta"]
-    fx = m["fx"]
-    target = fx[0]["quote"]
-    rates = {(f["base"], f["quote"]): f["rate"] for f in fx}
+    # v1.20 七批（Codex 复核 11-06）：fx 缺省=CNY 1:1（与 validate budget_calc 同一口径），
+    # 外币缺汇率仍 FAIL——校验/预算/页面三处统一
+    fx = m.get("fx") or []
+    target = fx[0].get("quote") if fx else "CNY"
+    rates = {(f.get("base"), f.get("quote")): f.get("rate") for f in fx}
     total_lo = total_hi = 0.0
     paid_lo = paid_hi = 0.0
     pend = est = 0
@@ -310,11 +315,12 @@ def r_cost(data):
                       '<ul style="margin:6px 0 0 18px">%s</ul></div>' % rows)
     n_pax = m["pax"]["adults"] + m["pax"].get("children", 0)
     per = "（人均同额）" if n_pax == 1 else "（%d 人分摊）" % n_pax
+    fx_note = "" if fx else "；全程 CNY 按 1:1 计（无外币支出，fx 表省略）"
     return "\n".join([
         '<div class="eyebrow">心里有数</div>',
         '<h2>预算（主案口径）</h2>',
         '<p class="lead">口径=主案全链花销（不含购物与替代差额，替代见尾注）；金额为实查/估算，'
-        '估算项逐条标注；自选项单列不进合计；1 人出行合计即人均。</p>',
+        '估算项逐条标注；自选项单列不进合计；1 人出行合计即人均%s。</p>' % fx_note,
         '<div class="stats" style="display:flex;flex-wrap:wrap;gap:8px">',
         '  <div class="stat"><div class="n">%.0f~%.0f</div><div class="l">合计 %s%s</div></div>' % (total_lo, total_hi, target, per),
         '  <div class="stat"><div class="n">%.0f~%.0f</div><div class="l">人均 %s</div></div>' % (total_lo / max(pax_all, 1), total_hi / max(pax_all, 1), target),
