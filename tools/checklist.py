@@ -52,7 +52,7 @@ table-layout:fixed+桌面 col 抵消规则，双骨架同款；成品层按列�
 「配图：【逐张写明…】」骨架填稿指引未删案；短标注【估算】不受影响）。
 源起=山东三城协作版终审：机械 13 项全过但四项问题全漏——检查项必须跟上翻车形态。
 """
-import sys, re, os, hashlib
+import sys, re, os, hashlib, json
 sys.stdout.reconfigure(encoding="utf-8")
 
 # ---------- 参数 ----------
@@ -236,16 +236,23 @@ if ph_hits:
 else:
     addp("占位符", "归零")
 
-# ---------- 6. 骨架指纹 ----------
+# ---------- 6. 骨架指纹（对照 assets/skeleton_pin.json，不再写死旧指纹） ----------
+_pin_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "skeleton_pin.json")
+try:
+    _pin_fp = json.load(open(_pin_path, encoding="utf-8")).get("css_fingerprint") or ""
+except Exception:
+    _pin_fp = ""
 style = re.search(r"<style[^>]*>(.*?)</style>", t, re.S)
-if style:
+if style and _pin_fp:
     fp = hashlib.md5(style.group(1).encode()).hexdigest()[:10]
-    if fp == "9f1fd4856f":
+    if fp == _pin_fp:
         addp("骨架指纹", fp)
     else:
-        addw("骨架指纹", f"{fp} ≠ 基准 9f1fd4856f——若是刻意改样式需在交付说明注明，否则=派生自旧骨架")
-else:
+        addw("骨架指纹", f"{fp} ≠ 基准 {_pin_fp}（assets/skeleton_pin.json）——刻意改版式要同步 pin，否则=派生自旧骨架")
+elif not style:
     addw("骨架指纹", "未找到 style 块")
+else:
+    addw("骨架指纹", "读不到 assets/skeleton_pin.json，无法核对")
 
 # ---------- 6.5 移动端表格列宽（v1.3，2026-10-10 山东版手机竖排案） ----------
 # 注意：成品可能有多个 max-width:900px 块（如 photos 单行块），必须全部遍历，search 会提前截止误报

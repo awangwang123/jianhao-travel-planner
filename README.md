@@ -4,6 +4,16 @@
 
 **让 AI 按统一流程查资料、排行程，制作可在手机和电脑查看的旅行路书。**
 
+<sub>English: <a href="README.en.md">README.en.md</a> — what this is, what you get, and how to install it in any AI agent.</sub>
+
+<p>
+  <a href="https://github.com/awangwang123/jianhao-travel-planner/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/awangwang123/jianhao-travel-planner?style=flat-square"></a>
+  <a href="https://github.com/awangwang123/jianhao-travel-planner/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/awangwang123/jianhao-travel-planner?style=flat-square"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/awangwang123/jianhao-travel-planner?style=flat-square"></a>
+  <a href="https://www.python.org/downloads/"><img alt="Python 3.8+" src="https://img.shields.io/badge/python-3.8%2B-blue?style=flat-square"></a>
+  <a href="https://github.com/awangwang123/jianhao-travel-planner/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/awangwang123/jianhao-travel-planner/ci.yml?branch=main&style=flat-square&label=CI"></a>
+</p>
+
 <sub><a href="#这是什么">📖 开始使用</a> · <a href="preview/hero.jpg">🖼 看成品示例</a> · <a href="https://github.com/awangwang123/jianhao-travel-planner/releases">⬇️ 下载稳定版</a> · <a href="https://github.com/awangwang123/jianhao-travel-planner/issues">❓ 遇到问题</a> · <a href="TUTORIAL.md">零基础教程</a></sub>
 
 <img src="preview/hero.jpg" width="680" alt="路书成品（桌面 + 导览图 + 手机）">
@@ -176,29 +186,16 @@ py tools/checklist.py 路书.html --visual               # ④ 最终成品检�
 
 ## 版本
 
-- **v1.19**（2026-11-03）：新增「中转衔接与廉价航空」条款（中转行李三规则／廉航值机费坑／联程票须全程乘坐／经港过境官方条件，均经权威源核查）与知识蒸馏核查规则（转述≠核查）；最小流程改造——QUICKSTART 一页纸入口、标准模板 JSON、`pipeline new/outline`、`fetch_images`、`timer` 阶段打点
-- **v1.18**（2026-10-26）：修复完整示范样本配图——七张 1×1 占位图替换为标注「虚构示意 · 非真实景点」的示意插画；页尾图源/动线声明改中性缺省（不再自动声称 Pexels/OSRM，数据侧可如实覆盖）；导览图出界检查兼容程序化导览图并三态收紧（查出越界=FAIL、未能完成检查=FAIL 阻断、无图=SKIP 单列）；工具模式统一入口显式带 `--visual`；发布打包防缺件防裹挟
-- **v1.17**（2026-10-24）：**工具链公开化**——生成器/数据校验器/导览图程序化/事实派生等八件工具与 schema/骨架/合成样本随包发布，新增「工具模式」四步机械全链；教程与 README 承诺修正（耗时/助手能力/检查边界/配图边界）
-- **v1.16**（2026-10-24）：修复部分页面无法识别行程时段的问题；未读取到时段时明确报错不漏检；减少餐段重复识别误报；作息默认节奏条文化（默认 09:30—10:00 开始游玩，不写起床细节）。**稳定版下载走 [Releases 页](https://github.com/awangwang123/jianhao-travel-planner/releases)（v1.16 起 zip 随 Release 发布）；主分支为最新开发态，两者可能不同步，以 Releases 为准**
-- **v1.15**（2026-10-21）：问题反馈模板适配双路线——报错单不再绑定 Claude Code，任意 AI 助手用户可顺填报错，新增「你用的 AI 助手」排查字段
-- **v1.14**（2026-10-19）：**出境能力包正式收录**——实查通路三层级/签证体检卡/出入境双清单/双币种+含税实付/sos 领保块/装备卡/热门未排取舍说明（新节「出境册附加条款」）；checklist.py 同步 v1.9（24 项机械闸+修复指引+出界断言）；新工具 basemap_tool.py（真底图工具链）+prep_fetch.py（日照/汇率/坐标预抓）；新节「提速·导览图·验收增补」——提速五条/导览图六条+总览比例家族基准/验收规范一页纸/三档位/价格复用边界
-- **v1.13**（2026-10-15）：开工前置闸——SKILL.md 速查卡+阶段 0 新增「出发地/日期窗/人数与关系禁默认+需求确认单」条款（根治他环境"零提问默认北京出发"实测事故）；禁止 AI 摘要改写 SKILL.md（93KB 正文被改造成附录的实测教训）；导览图双通路定序——手绘 SVG=无网无 key 兜底正路硬执行；README 新增「任意 AI 助手通用安装法」+ 用户纠偏咒语 + 需求说全提示
-- **v1.12**（2026-10-14）：美食清单按天分组式定稿（禁顿列大表）+密度硬标准四条；铁律 8 补航班聚合口径实证案例；跨板块归位黑名单
-- **v1.11**（2026-10-13）：SKILL.md 瘦身——版本演进翻车实录 42 条迁 HISTORY.md（一条不删），AI 触发加载体积减 35%，条款埋深漏读风险下降
-- **v1.10**（2026-10-13）：tools/checklist.py 同步至 v1.6——「形态检查组」八项（eyebrow 白名单/冷知识卡逐日/机位三条全覆盖/参数速查卡/导航格式/美食备选列/示意双写/工具条占位）+存储键双形态抓取+图渲染滚到页底二次确认
-- **v1.9**（2026-10-10）：移动端表格排版根治（fixed+colgroup，桌面零变化）+大交通实时实查铁律+导航当日标记废止+日落时刻 API 实查+订房机位距离顺位
-- **v1.8**（2026-10-09）：新增游客优惠检查（票根经济/文旅消费券，知会型呈现）
-- **v1.7**（2026-10-08）：每日卡标准件——今日速览三件事式开头、冷知识卡与 Plan B 转固定件；机位改顺路提示（位置+时段+拍法）；提示与避雷两组兼备；导览图插画化基线（多色动线）；住宿选房顺位；R2 店收录门槛
-- **v1.6**（2026-10-07）：checklist.py 四项扩容——图渲染懒加载、当日徽章在位、存储键防跨成品污染、填稿指引残留拦截
-- **v1.5**（2026-10-05）：新增 tools/checklist.py 机械检查+头部执行速查卡
-- **v1.4**（2026-10-03）：价格纪律五条——餐饮人均口径/路程时长写线路名/估算不豁免实查/价格多处同步/收录差集核查
-- **v1.3**（2026-09-30）：内容深度定标——六板块必答清单/价格含税总价制/图源三级链/总览八件
-- **v1.2**（2026-09-29）：导航体验升级——侧栏滚动按序高亮、点击锁定、当日自动定位
-- **v1.1**（2026-09-26）：修正打包结构与安装说明
-- **v1.0**（2026-09-23）：开源首发
+当前 **v1.19**（2026-11-03）。最近两版要点：
+
+- **v1.19**：新增「中转衔接与廉价航空」条款与知识蒸馏核查规则（转述 ≠ 核查）；最小流程改造——`QUICKSTART.md` 一页纸入口、标准模板、`pipeline new/outline`、`fetch_images`
+- **v1.18**：完整示范配图改为标注「虚构示意」的插画；导览图出界检查收成三态（越界 FAIL / 查不完 FAIL / 无图 SKIP）；已发布标签不再覆盖
+
+v1.0 起的逐版记录在 [CHANGELOG.md](CHANGELOG.md)。稳定包以 [Releases](https://github.com/awangwang123/jianhao-travel-planner/releases) 为准，主分支是开发态。
 
 ## 反馈与共创
 
 - 🐛 **报错/用不了**：[Issues](https://github.com/awangwang123/jianhao-travel-planner/issues) 发帖（有模板）
 - 📍 **许愿城市**：[旅行许愿池](https://github.com/awangwang123/jianhao-travel-planner/discussions/1)——点赞最高的城市，下一份官方示例就是它（附完整生成过程记录）
 - 💬 其他想法：[Discussions](https://github.com/awangwang123/jianhao-travel-planner/discussions) 随便聊
+- 🛠 **参与改进**：看 [CONTRIBUTING.md](CONTRIBUTING.md)（怎么报错、许愿、提 PR）

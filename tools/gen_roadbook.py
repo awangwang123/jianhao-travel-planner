@@ -12,6 +12,8 @@ import io, json, re, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pricing import expense_mult  # 计费口径唯一正本（Codex 五轮复核）
 from fact import fact_display, resolve_slot_t, fill_slot_text  # 事实展示派生唯一正本（R6 fact 接通；R8 引用派生；R9 文案占位符）
+from consistency import (  # 骨架 pin / CSS 资产 / 版式闸，与 pipeline 用的是同一套
+    verify_skeleton_assets, collect_problems, css_of, fingerprint_text)
 
 if hasattr(sys.stdout, "buffer"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -20,14 +22,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "pilot_italy", "trip_data.json")
 OUT = os.path.join(ROOT, "pilot_italy", "render_v02.html")
 SKELETON = os.path.join(ROOT, "assets", "路书_基准骨架.html")  # 发布包版：骨架随包分发（包内 assets/），不依赖本机 skill 安装
-FINGERPRINT = "9f1fd4856f"  # 骨架 CSS 指纹（v2 设计: style 禁碰）
+# 指纹不再写死在本文件。唯一真值是 assets/skeleton_pin.json 的 css_fingerprint，
+# 算法与 consistency.py 相同：路书_基准骨架.css 的 UTF-8 md5 前 10 位。
+# 改版式：只改 css → 原样回填骨架 <style id="skeleton-css"> → 更新 pin 的 version 与 css_fingerprint。
+# 三处任一不一致，这里直接非 0 退出，不会写出成品。
 
 
 def load():
+    pin, css_text, h = verify_skeleton_assets(SKELETON)
     d = json.load(io.open(DATA, encoding="utf-8"))
-    h = io.open(SKELETON, encoding="utf-8").read()
-    assert FINGERPRINT in h, "骨架指纹缺失"
-    return d, h
+    return d, h, pin, css_text
 
 
 # ---------- 组件（带 data-ref 溯源=3.2 责任层判定的基础设施） ----------
@@ -549,8 +553,14 @@ SOS_BODY = """
   <div class="sos"><h4>🚆 错过车/机</h4><p>意铁改签规则分档（D8 衔接日买 Economy 档即为此）；航班延误险+航司柜台改签。</p></div>
 </div>"""
 
-PLACEHOLDER = ('<p class="eyebrow">%s</p><p style="color:var(--ink3);font-size:.85rem">'
-               "⏳ 渲染引擎 v0.1 暂未渲染本板块（M2 后续里程碑补全）。</p>")
+def section_placeholder(label, key):
+    """结构化字段和 blocks 都没有时的显式占位。空注释不算写过这一板块。"""
+    text = (
+        "本板块（%s）还没有可渲染的内容。生成器按三步取值：先看 %s_structured，"
+        "再看 blocks.%s 里的现成 HTML，两处都空才落到这段占位。"
+        "请补上结构化字段，或在 blocks 里给出这一板块的正文；不要留空注释交差。"
+        % (label, key, key))
+    return '<p class="eyebrow">%s</p>\n<p class="lead">%s</p>' % (label, text)
 
 
 def main():
@@ -558,7 +568,8 @@ def main():
     # M4：参数化数据/输出路径（回填册默认 pilot_italy；新册 gen_roadbook.py <data.json> <out.html>）
     if len(sys.argv) > 2:
         DATA, OUT = sys.argv[1], sys.argv[2]
-    data, h = load()
+    data, h, pin, css_text = load()
+    base_html = h  # 字符串不可变；后面 h = h.replace 不会改到这份基准
     I = idx(data)
     m = data["meta"]
     need_days = len(data["days"])
@@ -620,13 +631,27 @@ def main():
                   'todayStr() < "%s"' % m["date_window"]["start"])
     # ②存储键前缀（骨架默认 it=意大利残留；换本册城市码+册缩写）
     city_code = m.get("city_code", "wy")
-    h = h.replace("'it_font'", "'%s_font'" % city_code)
     h = h.replace('"it_font"', '"%s_font"' % city_code)
-    h = h.replace("itv_chk_", "%s_chk_" % city_code)
+    h = h.replace("'it_font'", "'%s_font'" % city_code)
+    # 骨架先把 __CITY___chk_ 换成 it_chk_。旧目标 itv_chk_ 对不上，勾选键留在 it、字号键换成城市码，版式闸第⑧项必炸。
+    h = h.replace('"it_chk_"', '"%s_chk_"' % city_code)
+    h = h.replace("'it_chk_'", "'%s_chk_'" % city_code)
     # 渲染（v0.3=基线整块直渲，字节级对齐 作者 8 条反馈一次全消；v0.4=M4 新册数据驱动回退路径）
     B = data.get("blocks") or {}
+    if B.get("extra_styles"):
+        print("FATAL blocks.extra_styles 已废止：版式只来自 assets/路书_基准骨架.css，禁止按册追加 <style>。")
+        sys.exit(1)
     assert B.get("overview_body") or data.get("overview_structured"), \
         "缺 overview 数据源（回填册先跑 retarget_v03.py；新册填 overview_structured）"
+
+    def take(structured, key, label):
+        # 结构化 → blocks 现成 HTML → 显式占位。缺键不再 KeyError，也不留空注释。
+        if structured:
+            return structured
+        blob = B.get(key)
+        if blob:
+            return blob
+        return section_placeholder(label, key)
     # v0.4 结构化渲染：overview 主体+prep_gear 拼接（无结构化时回退 blocks 直渲）
     ov_body = r_overview_body(data) or B.get("overview_body", "")
     prep = r_prep_gear(data) or B.get("prep_gear", "")
@@ -637,45 +662,15 @@ def main():
     # cost=基线原版直渲（回填册 作者拍板）；新册无 blocks=程序细算 r_cost（明细账→预算=schema 设计）
     cost_html = B.get("cost") or r_cost(data)
     h = replace_section(h, "cost", cost_html)
-    # v0.4 结构化渲染：sos（字节等价验收过则此路径替代 blocks 直渲）
-    sos_html = r_sos(data)
-    if sos_html:
-        h = replace_section(h, "sos", sos_html)
-    else:
-        h = replace_section(h, "sos", B["sos"])
-    # v0.4 结构化渲染：boost/gift（字节等价验收过则此路径替代 blocks 直渲）
-    boost_html = r_boost(data)
-    h = replace_section(h, "boost", boost_html if boost_html else B["boost"])
-    gift_html = r_gift(data)
-    h = replace_section(h, "gift", gift_html if gift_html else B["gift"])
-    # v0.4 结构化渲染：drive（字节等价验收过则此路径替代 blocks 直渲）
-    drive_html = r_drive(data)
-    if drive_html:
-        h = replace_section(h, "drive", drive_html)
-    else:
-        h = replace_section(h, "drive", B["drive"])
-    # v0.4 结构化渲染：stay（字节等价验收过则此路径替代 blocks 直渲）
-    stay_html = r_stay(data)
-    if stay_html:
-        h = replace_section(h, "stay", stay_html)
-    else:
-        h = replace_section(h, "stay", B["stay"])
-    # v0.4 结构化渲染：ticket（字节等价验收过则此路径替代 blocks 直渲）
-    ticket_html = r_ticket(data)
-    if ticket_html:
-        h = replace_section(h, "ticket", ticket_html)
-    else:
-        h = replace_section(h, "ticket", B["ticket"])
-    # v0.4 结构化渲染：tips（字节等价验收过则此路径替代 blocks 直渲）
-    tips_html = r_tips(data)
-    if tips_html:
-        h = replace_section(h, "tips", tips_html)
-    else:
-        h = replace_section(h, "tips", B["tips"])
-    # v0.4 样板：eat 结构化渲染（字节等价验收过则此路径替代 blocks 直渲）
-    eat_html = r_eat(data)
-    if eat_html:
-        h = replace_section(h, "eat", eat_html)
+    # 结构化 → blocks.get → 显式占位。eat 以前缺数据就留空注释；sos 等缺键会 KeyError。
+    h = replace_section(h, "sos", take(r_sos(data), "sos", "应急"))
+    h = replace_section(h, "boost", take(r_boost(data), "boost", "备选"))
+    h = replace_section(h, "gift", take(r_gift(data), "gift", "特产"))
+    h = replace_section(h, "drive", take(r_drive(data), "drive", "路程"))
+    h = replace_section(h, "stay", take(r_stay(data), "stay", "住宿"))
+    h = replace_section(h, "ticket", take(r_ticket(data), "ticket", "门票"))
+    h = replace_section(h, "tips", take(r_tips(data), "tips", "提示"))
+    h = replace_section(h, "eat", take(r_eat(data), "eat", "美食"))
     # 底部尾部 + 附加样式（背景色等 build 阶段覆盖）
     if B.get("page_tail"):
         tail_pat = re.compile(r'</section>\s*(<footer.*?</body>)', re.S)
@@ -691,27 +686,30 @@ def main():
         h = re.sub(r'<aside class="side">.*?</aside>', lambda m: B["aside"], h, count=1, flags=re.S)
     if B.get("base_title"):
         h = re.sub(r'<title>.*?</title>', lambda m: B["base_title"], h, count=1, flags=re.S)
-    if B.get("extra_styles"):
-        h = h.replace("</head>", "<style>\n" + B["extra_styles"] + "\n</style>\n</head>", 1)
-    # 指纹终验：style 禁碰
-    assert FINGERPRINT in h, "渲染后骨架指纹丢失（style 被改动=违规）"
-    # B17（Codex 十/十一轮）：.pp 组件样式统一在 CSS（新增独立 style 块，不触碰骨架原 style 段）——
-    # 断点切换只依赖样式表，无行内布局样式可覆盖
-    h = h.replace("</head>",
-                  "<style>"
-                  ".pp{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}"
-                  ".pp figure{flex:1 1 calc(50% - 4px);min-width:0;margin:0}"
-                  ".pp figure:only-child{flex:1 1 100%}"
-                  ".pp img{max-width:100%;height:auto;display:block}"
-                  "@media(max-width:768px){.pp figure{flex-basis:100%}}"
-                  "</style>\n</head>", 1)
+    # 内容只替换 section 正文。.pp 已收进骨架 CSS，这里不再追加 style，也不改那一块。
+    got_css = css_of(h)
+    got_fp = fingerprint_text(got_css)
+    if got_css != css_text or got_fp != pin["css_fingerprint"]:
+        print("FATAL 渲染后骨架 CSS 被改动，拒绝写出（未落盘）")
+        print("  版本 %s" % pin["version"])
+        print("  期望指纹 %s" % pin["css_fingerprint"])
+        print("  实得指纹 %s" % (got_fp if got_css else "(无 style)"))
+        print("内容渲染只替换 section 正文，禁止改 <style id=\"skeleton-css\">。")
+        sys.exit(1)
+    bad = collect_problems(h, base_html, css_text, pin, need_days)
+    if bad:
+        print("FATAL 版式一致性未过，拒绝写出（未落盘）")
+        print("  版本 %s ｜ 期望指纹 %s" % (pin["version"], pin["css_fingerprint"]))
+        for item in bad:
+            print("  - " + item)
+        sys.exit(1)
     import os as _os
     _d = _os.path.dirname(_os.path.abspath(OUT))
     if _d and not _os.path.isdir(_d):
         _os.makedirs(_d, exist_ok=True)
     io.open(OUT, "w", encoding="utf-8").write(h)
     print("✅ 写出 %s（%d 字符）" % (OUT, len(h)))
-    print("指纹在位：%s ✓" % FINGERPRINT)
+    print("指纹在位：%s（骨架 %s）✓" % (pin["css_fingerprint"], pin["version"]))
 
 
 if __name__ == "__main__":

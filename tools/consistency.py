@@ -12,9 +12,9 @@ consistency.py — 路书 HTML「版式一致性」校验
 默认基准 = jianhao-travel-planner（见好 · 旅行规划器）skill 的 assets/路书_基准骨架.html
 退出码：0 = 全部一致；1 = 有不一致。
 
-校验项（基准即真值，不硬编码指纹数字——指纹随基准改动而变）：
-  ① <style> 块数（朋友版 1；带 #intel 的自用版 2）
-  ② CSS 指纹 == 基准
+校验项（基准即真值，不硬编码指纹数字——指纹随 assets/路书_基准骨架.css 与 skeleton_pin.json 变）：
+  ① <style> 恰好 1 块，正文与 CSS 资产逐字相同（#intel 不再另挂第二块样式）
+  ② CSS 指纹 == pin.css_fingerprint
   ③ IA：非 day 区块的集合与顺序 == 基准；day 区块必须是连续的 day1..dayN 且夹在 drive 与 boost 之间
   ④ 导航覆盖全部区块（含 #drive —— 原家族漏了这个入口）
   ⑤ 8 个版式 token 值与基准逐条相等
@@ -29,6 +29,7 @@ import re
 import sys
 import argparse
 import hashlib
+import json
 import os
 
 # 默认基准 = 随包自寻址（tools/ 的上一级 assets/），任何机器上拷包即跑；可用 --base 覆盖
@@ -91,7 +92,192 @@ def fonts_of(s):
 
 
 def fp(s):
-    return hashlib.md5(css_of(s).encode("utf-8")).hexdigest()[:10]
+    return fingerprint_text(css_of(s))
+
+
+ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
+CSS_PATH = os.path.join(ASSETS, "路书_基准骨架.css")
+PIN_PATH = os.path.join(ASSETS, "skeleton_pin.json")
+
+
+def fingerprint_text(css_text):
+    return hashlib.md5((css_text or "").encode("utf-8")).hexdigest()[:10]
+
+
+def load_pin(path=None):
+    path = path or PIN_PATH
+    if not os.path.exists(path):
+        emit("FATAL 找不到骨架 pin: %s" % path)
+        sys.exit(1)
+    try:
+        pin = json.load(io.open(path, encoding="utf-8"))
+    except Exception as e:
+        emit("FATAL 骨架 pin 无法解析: %s (%s)" % (path, e))
+        sys.exit(1)
+    if not pin.get("version") or not pin.get("css_fingerprint"):
+        emit("FATAL 骨架 pin 缺 version 或 css_fingerprint: %s" % path)
+        sys.exit(1)
+    return pin
+
+
+def skeleton_version_ids(html):
+    attr = re.search(r'data-skeleton-version="([^"]+)"', html or "")
+    cmt = re.search(r'<!--\s*skeleton-version:\s*([^\s]+)\s*-->', html or "")
+    return (attr.group(1) if attr else ""), (cmt.group(1) if cmt else "")
+
+
+def fail_pin(msg):
+    emit(msg)
+    sys.exit(1)
+
+
+def verify_skeleton_assets(base_path=None):
+    """读 pin、CSS 资产、骨架 html。三处不一致就失败退出，不继续渲染或校验。
+
+    返回 (pin, css_text, base_html)。
+    """
+    base_path = base_path or DEFAULT_BASE
+    pin = load_pin()
+    if not os.path.exists(CSS_PATH):
+        fail_pin("FATAL 找不到骨架 CSS: %s" % CSS_PATH)
+    css_text = io.open(CSS_PATH, encoding="utf-8").read()
+    got = fingerprint_text(css_text)
+    if got != pin["css_fingerprint"]:
+        fail_pin(
+            "FATAL 骨架指纹不一致（版本 %s）\n"
+            "  期望 css_fingerprint = %s （%s）\n"
+            "  实得 css_fingerprint = %s （%s）\n"
+            "禁止静默继续。改了 CSS 却没更新 pin 时就是这条。\n"
+            "同步步骤写在 skeleton_pin.json 的 _comment。"
+            % (pin.get("version"), pin["css_fingerprint"], os.path.basename(PIN_PATH),
+               got, os.path.basename(CSS_PATH)))
+    base_html = read(base_path)
+    inlined = css_of(base_html)
+    if inlined != css_text:
+        fail_pin(
+            "FATAL 骨架内联 style 与 CSS 资产不是逐字同一份（版本 %s）\n"
+            "  内联指纹 %s ｜ 资产指纹 %s\n"
+            "  %s 必须原样放进 <style id=\"skeleton-css\">，禁止只改一边。"
+            % (pin["version"], fingerprint_text(inlined), got, os.path.basename(CSS_PATH)))
+    attr, cmt = skeleton_version_ids(base_html)
+    if attr != pin["version"] or cmt != pin["version"]:
+        fail_pin(
+            "FATAL 骨架版本号不一致（pin %s）\n"
+            "  data-skeleton-version = %s\n"
+            "  注释 skeleton-version = %s\n"
+            "两处都要写，并且等于 skeleton_pin.json 的 version。"
+            % (pin["version"], attr or "(缺失)", cmt or "(缺失)"))
+    return pin, css_text, base_html
+
+
+def collect_problems(s, base, css_text, pin, expect_days=None):
+    """对照基准骨架列出不一致。空列表 = 通过。不改 CSS、不改文档。"""
+    b_ids = secs_of(base)
+    b_non = [i for i in b_ids if not DAY_RE.match(i)]
+    b_tok = tokens_of(base)
+    b_font = fonts_of(base)
+    base_placeholders = set(re.findall(r"【[^】]{1,24}】", base))
+    bad = []
+    ids = secs_of(s)
+    day_ids = [i for i in ids if DAY_RE.match(i)]
+    non = [i for i in ids if not DAY_RE.match(i)]
+    has_intel = "intel" in ids
+    navs = navs_of(s)
+    tok = tokens_of(s)
+    fonts = fonts_of(s)
+    ndays = len(day_ids) if expect_days is None else expect_days
+
+    attr, cmt = skeleton_version_ids(s)
+    if attr != pin["version"] or cmt != pin["version"]:
+        bad.append("骨架版本号丢失或被改（data-skeleton-version=%s，注释=%s，应为 %s）"
+                   % (attr or "缺失", cmt or "缺失", pin["version"]))
+
+    # ① 只允许骨架那一块 style
+    if style_count(s) != 1:
+        bad.append("<style> 块数 %d（应为 1；版式只允许骨架那一块，禁止按册再挂 style）"
+                   % style_count(s))
+
+    # ② 正文必须等于 CSS 资产（指纹是同一份字节的 md5 前 10 位）
+    got_css = css_of(s)
+    if got_css != css_text:
+        bad.append("CSS 正文与 assets/路书_基准骨架.css 不一致（指纹 %s ≠ 期望 %s）" % (
+            fingerprint_text(got_css) if got_css else "(无)", pin["css_fingerprint"]))
+
+    # ③ IA
+    exp_non = [i for i in b_non if i != "intel"]
+    got_non = [i for i in non if i != "intel"]
+    if got_non != exp_non:
+        miss = [i for i in exp_non if i not in got_non]
+        extra = [i for i in got_non if i not in exp_non]
+        bad.append("IA 不符（缺 %s / 多 %s / 或顺序不同）" % (miss or "无", extra or "无"))
+    exp_days = ["day%d" % (k + 1) for k in range(len(day_ids))]
+    if day_ids != exp_days:
+        bad.append("day 区块不连续：%s" % day_ids)
+    if len(day_ids) != ndays:
+        bad.append("天数 %d ≠ 期望 %d" % (len(day_ids), ndays))
+    if day_ids:
+        i0, i1 = ids.index(day_ids[0]), ids.index(day_ids[-1])
+        if i0 == 0 or ids[i0 - 1] != "drive":
+            bad.append("day1 前面不是 drive")
+        if i1 + 1 >= len(ids) or ids[i1 + 1] != "boost":
+            bad.append("最后一天后面不是 boost")
+    if has_intel and ids[-1] != "intel":
+        bad.append("#intel 不在末尾")
+
+    # ④ 导航覆盖（含 drive）
+    need = [i for i in ids if i != "intel"]
+    missing = [i for i in need if i not in navs]
+    if missing:
+        bad.append("导航缺入口：%s" % missing)
+
+    # ⑤ token
+    for t in TOKENS:
+        if t not in tok:
+            bad.append("缺 token %s" % t)
+        elif t in b_tok and tok[t].strip() != b_tok[t].strip():
+            bad.append("token %s = %s ≠ 基准 %s" % (t, tok[t].strip(), b_tok[t].strip()))
+
+    # ⑥ 字体
+    if fonts != b_font:
+        bad.append("字体栈不符: %s" % fonts)
+
+    # ⑦ JS 门控 + 兜底 + 六件事
+    if "documentElement.classList.add('js')" not in s.replace('"', "'"):
+        bad.append("缺 html.js 门控脚本")
+    if "setTimeout" not in s or "main section.in" not in s:
+        bad.append("缺入场动效兜底脚本")
+    for mark, desc in [("TRIP", "当日模式"), ("fontInc", "字号+"), ("fontDec", "字号−"),
+                       ("printBtn", "打印"), ("backtop", "返回顶部"),
+                       ("IntersectionObserver", "滚动入场/侧栏高亮"), ("_chk_", "勾选记忆")]:
+        if mark not in s:
+            bad.append("缺 JS 功能：%s(%s)" % (desc, mark))
+
+    # ⑧ localStorage 命名规约
+    lskeys = set(re.findall(r'localStorage\.(?:setItem|getItem)\("([^"]+)"', s))
+    font_keys = [k for k in lskeys if k.endswith("_font")]
+    chk_pref = set(re.findall(r'"([a-z]{2,8}_chk_)"', s))
+    if len(font_keys) != 1 or not re.match(r"^[a-z]{2,8}_font$", font_keys[0] if font_keys else ""):
+        bad.append("字号键不合规（应 <城市码>_font）: %s" % sorted(lskeys))
+    if len(chk_pref) != 1:
+        bad.append("勾选键前缀不合规（应单个 <城市码>_chk_）: %s" % sorted(chk_pref))
+    else:
+        fp_city = font_keys[0][:-5] if font_keys else ""
+        if fp_city and list(chk_pref)[0][:-5] != fp_city:
+            bad.append("字号键与勾选键城市码不一致：%s vs %s" % (fp_city, list(chk_pref)[0][:-5]))
+
+    # ⑨ 残留占位符
+    # 只查基准骨架里定义过的占位符。正文里的【估算】【未核实】是合法标注，全局搜「【」会误伤。
+    hits = sorted(p for p in base_placeholders if p in s)
+    if hits:
+        bad.append("残留基准占位符：%s" % hits)
+    if "__CITY__" in s:
+        bad.append("残留 __CITY__")
+
+    # ⑩ 配图
+    nfig = s.count("<figure")
+    if nfig < ndays:
+        bad.append("每日配图 %d 张 < 天数 %d" % (nfig, ndays))
+    return bad
 
 
 def main():
@@ -101,128 +287,35 @@ def main():
     ap.add_argument("--days", type=int, default=None, help="行程天数，默认按文件里的 day 区块数判断")
     a = ap.parse_args()
 
-    base = read(a.base)
+    # pin / CSS 资产 / 骨架内联 style 三处先对齐，对不齐直接失败，不再往下校验成品
+    pin, css_text, base = verify_skeleton_assets(a.base)
     b_ids = secs_of(base)
     b_days = [i for i in b_ids if DAY_RE.match(i)]
-    b_non = [i for i in b_ids if not DAY_RE.match(i)]
-    b_tok = tokens_of(base)
-    b_font = fonts_of(base)
-    b_fp = fp(base)
-    b_nav = navs_of(base)
     # 基准里出现的 【...】 就是"待填占位符"清单（与正文里的【估算】类合法标注区分开）
-    BASE_PLACEHOLDERS = set(re.findall(r"【[^】]{1,24}】", base))
+    base_placeholders = set(re.findall(r"【[^】]{1,24}】", base))
 
     emit("=" * 118)
-    emit("路书版式一致性校验　基准 = %s" % os.path.basename(a.base))
+    emit("路书版式一致性校验　基准 = %s　骨架 %s" % (os.path.basename(a.base), pin["version"]))
     emit("  基准指纹 %s ｜ 基准 IA %d 区块（含 %d 天）｜ 占位符 %d 个"
-          % (b_fp, len(b_ids), len(b_days), len(BASE_PLACEHOLDERS)))
+          % (pin["css_fingerprint"], len(b_ids), len(b_days), len(base_placeholders)))
     emit("=" * 118)
 
     allbad = []
     for f in a.files:
         s = read(f)
-        bad = []
         n = os.path.basename(f)
+        bad = collect_problems(s, base, css_text, pin, a.days)
         ids = secs_of(s)
         days = [i for i in ids if DAY_RE.match(i)]
-        non = [i for i in ids if not DAY_RE.match(i)]
         has_intel = "intel" in ids
         navs = navs_of(s)
-        tok = tokens_of(s)
-        fonts = fonts_of(s)
-        ndays = a.days or len(days)
-
-        # ① <style> 块数
-        want_style = 2 if has_intel else 1
-        if style_count(s) != want_style:
-            bad.append("<style> 块数 %d（应为 %d）" % (style_count(s), want_style))
-
-        # ② 指纹
-        if fp(s) != b_fp:
-            bad.append("CSS 指纹 %s ≠ 基准 %s" % (fp(s), b_fp))
-
-        # ③ IA
-        exp_non = [i for i in b_non if i != "intel"]
-        got_non = [i for i in non if i != "intel"]
-        if got_non != exp_non:
-            miss = [i for i in exp_non if i not in got_non]
-            extra = [i for i in got_non if i not in exp_non]
-            bad.append("IA 不符（缺 %s / 多 %s / 或顺序不同）" % (miss or "无", extra or "无"))
-        exp_days = ["day%d" % (k + 1) for k in range(len(days))]
-        if days != exp_days:
-            bad.append("day 区块不连续：%s" % days)
-        if len(days) != ndays:
-            bad.append("天数 %d ≠ 期望 %d" % (len(days), ndays))
-        if days:
-            i0, i1 = ids.index(days[0]), ids.index(days[-1])
-            if i0 == 0 or ids[i0 - 1] != "drive":
-                bad.append("day1 前面不是 drive")
-            if i1 + 1 >= len(ids) or ids[i1 + 1] != "boost":
-                bad.append("最后一天后面不是 boost")
-        if has_intel and ids[-1] != "intel":
-            bad.append("#intel 不在末尾")
-
-        # ④ 导航覆盖（含 drive）
-        need = [i for i in ids if i != "intel"]
-        missing = [i for i in need if i not in navs]
-        if missing:
-            bad.append("导航缺入口：%s" % missing)
-
-        # ⑤ token
-        for t in TOKENS:
-            if t not in tok:
-                bad.append("缺 token %s" % t)
-            elif t in b_tok and tok[t].strip() != b_tok[t].strip():
-                bad.append("token %s = %s ≠ 基准 %s" % (t, tok[t].strip(), b_tok[t].strip()))
-
-        # ⑥ 字体
-        if fonts != b_font:
-            bad.append("字体栈不符: %s" % fonts)
-
-        # ⑦ JS 门控 + 兜底 + 六件事
-        if "documentElement.classList.add('js')" not in s.replace('"', "'"):
-            bad.append("缺 html.js 门控脚本")
-        if "setTimeout" not in s or "main section.in" not in s:
-            bad.append("缺入场动效兜底脚本")
-        for mark, desc in [("TRIP", "当日模式"), ("fontInc", "字号+"), ("fontDec", "字号−"),
-                           ("printBtn", "打印"), ("backtop", "返回顶部"),
-                           ("IntersectionObserver", "滚动入场/侧栏高亮"), ("_chk_", "勾选记忆")]:
-            if mark not in s:
-                bad.append("缺 JS 功能：%s(%s)" % (desc, mark))
-
-        # ⑧ localStorage 命名规约
         lskeys = set(re.findall(r'localStorage\.(?:setItem|getItem)\("([^"]+)"', s))
         font_keys = [k for k in lskeys if k.endswith("_font")]
-        chk_pref = set(re.findall(r'"([a-z]{2,8}_chk_)"', s))
-        if len(font_keys) != 1 or not re.match(r"^[a-z]{2,8}_font$", font_keys[0] if font_keys else ""):
-            bad.append("字号键不合规（应 <城市码>_font）: %s" % sorted(lskeys))
-        if len(chk_pref) != 1:
-            bad.append("勾选键前缀不合规（应单个 <城市码>_chk_）: %s" % sorted(chk_pref))
-        else:
-            fp_city = font_keys[0][:-5] if font_keys else ""
-            if fp_city and list(chk_pref)[0][:-5] != fp_city:
-                bad.append("字号键与勾选键城市码不一致：%s vs %s" % (fp_city, list(chk_pref)[0][:-5]))
-
-        # ⑨ 残留占位符
-        # ⚠️ 不能全局查「【」——路书正文里 `【具体店以现场为准】`『【估算】』『【未核实】』
-        #    是**合法的内容标注**（家族写法本来就这么标），首版全局判据把 3 份正常路书误报成 ❌。
-        #    → 只查"基准骨架里定义过的占位符"，基准加占位符即自动纳入。
-        hits = sorted(p for p in BASE_PLACEHOLDERS if p in s)
-        if hits:
-            bad.append("残留基准占位符：%s" % hits)
-        if "__CITY__" in s:
-            bad.append("残留 __CITY__")
-
-        # ⑩ 配图
-        nfig = s.count("<figure")
-        if nfig < ndays:
-            bad.append("每日配图 %d 张 < 天数 %d" % (nfig, ndays))
-
         status = "✅" if not bad else "❌"
         emit("\n%s %s" % (status, n))
         emit("   指纹 %s ｜ style %d ｜ 区块 %d（%d 天%s）｜ 导航 %d ｜ figure %d ｜ 字号键 %s"
               % (fp(s), style_count(s), len(ids), len(days),
-                 "·含intel" if has_intel else "", len(navs), nfig,
+                 "·含intel" if has_intel else "", len(navs), s.count("<figure"),
                  (font_keys[0] if font_keys else "—")))
         for x in bad:
             emit("     - " + x)
@@ -233,8 +326,8 @@ def main():
         emit("❌ 不一致 %d 项：" % len(allbad))
         for n, x in allbad:
             emit("   [%s] %s" % (n, x))
-        emit("\n常见修法：搬基准骨架的 <style> + 3 个 <script>；补 #drive 导航入口；"
-              "\n          把城市码统一为 <城市码>_font / <城市码>_chk_；回收 【】占位符与残留城市名。")
+        emit("\n常见修法：不要改成品里的 <style>；版式只改 assets/路书_基准骨架.css 并按 skeleton_pin.json 同步。"
+              "\n          补 #drive 导航入口；城市码统一为 <城市码>_font / <城市码>_chk_；回收 【】占位符。")
         sys.exit(1)
     emit("✅ 全部与基准一致（%d 份）" % len(a.files))
 

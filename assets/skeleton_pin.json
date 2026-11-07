@@ -1,0 +1,7 @@
+{
+  "version": "1.19.1",
+  "css_fingerprint": "134ca5b45d",
+  "css_file": "路书_基准骨架.css",
+  "html_file": "路书_基准骨架.html",
+  "_comment": "改骨架版式时按这四步，禁止只改成品里的 style 来过闸：1) 只改 assets/路书_基准骨架.css；2) 把该文件全文原样放进 路书_基准骨架.html 的 <style id=\"skeleton-css\">…</style>（前后不要多一个字符）；3) 把 <html data-skeleton-version> 和 <!-- skeleton-version: … --> 改成同一个新版本号；4) 重算指纹写入 css_fingerprint（与 consistency.py 相同：UTF-8 字节的 md5 前 10 位）。命令：python -c \"import hashlib,pathlib; print(hashlib.md5(pathlib.Path('assets/路书_基准骨架.css').read_bytes()).hexdigest()[:10])\"。version、内联 style、本指纹三处任一不一致，gen_roadbook.py 与 consistency.py 直接非 0 退出。"
+}

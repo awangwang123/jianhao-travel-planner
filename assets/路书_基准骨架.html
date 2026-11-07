@@ -1,12 +1,14 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-skeleton-version="1.19.1">
+<!-- skeleton-version: 1.19.1 -->
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="generator" content="jianhao-travel-planner · 基准骨架 · 指纹 9f1fd4856f">
+<meta name="generator" content="jianhao-travel-planner · 基准骨架 · 指纹 134ca5b45d">
 <title>【目的地】路书 · 基准骨架</title>
 <script>document.documentElement.classList.add('js');</script>
-<style>
+<!-- 版式唯一正本：assets/路书_基准骨架.css。下面这一块必须与该文件逐字相同。改版式只改 css，再原样回填本块，并更新 assets/skeleton_pin.json 的 version 与 css_fingerprint。 -->
+<style id="skeleton-css">
 :root{
   --bg:#F7F5F0; --surface:#FCFBF7; --ink:#1C1B17; --ink2:#5C594E; --ink3:#8A8677;
   --line:#E3DFD3; --accent:#2F5D43; --accent-soft:#E6EEE8; --on-accent:#F7F5F0;
@@ -182,6 +184,13 @@ html.js section.in .card,html.js section.in .day,html.js section.in .tip,html.js
 b,strong{color:var(--ink)}
 .warn-line b{color:inherit}
 .tb td .intro{display:block;font-size:.78rem;color:var(--ink3);margin-top:3px;line-height:1.5}
+
+/* ---------- 照片行 .pp（原先由 gen_roadbook 在 head 末尾追加第二块 style；现收进骨架，渲染器禁止再追加） ---------- */
+.pp{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.pp figure{flex:1 1 calc(50% - 4px);min-width:0;margin:0}
+.pp figure:only-child{flex:1 1 100%}
+.pp img{max-width:100%;height:auto;display:block}
+@media(max-width:768px){.pp figure{flex-basis:100%}}
 </style>
 </head>
 <body>
@@ -246,7 +255,7 @@ b,strong{color:var(--ink)}
       下午茶：出名地推 2 家名店 / 不出名地推有品味的咖啡馆或小吃；
       每日行程卡的午/晚只推 1 家 + 行尾「（更多选择在美食清单）」 --></section>
         <section id="gift"><!-- 特产与送礼：+, 加一条「别在景点门口买」提醒 --></section>
-        <!-- 探店情报原档（**仅自用版**）：section#intel + 情报卡 .ic-card + 侧栏导航项 + 独立样式表（第 2 块 <style>） -->
+        <!-- 探店情报原档（**仅自用版**）：section#intel + 情报卡 .ic-card + 侧栏导航项。公用骨架只有一块 style（见 assets/路书_基准骨架.css），不要再为 intel 另挂样式表。 -->
         <section id="intel"></section>
 <footer style="padding:64px 0 80px;text-align:center">
   <h2>【目的地】路书 · 【行程主题】</h2>
