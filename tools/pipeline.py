@@ -2,7 +2,7 @@
 """pipeline.py —— v1.2 统一制作入口（任务书④：整合制作入口+自动计时，替代每册临时写脚本）
 用法:
   py tools/pipeline.py full <trip_data.json> <输出.html> [标题]
-      全链: validate → gen → apply_routes(有 routes 时) → checklist
+      全链: validate → gen → apply_routes(有 routes 时) → consistency（不过就停，并删掉输出）→ checklist
       自动计时（timer start/end 落 timer_records.jsonl），各环节失败即停并报环节名
   py tools/pipeline.py check <成品.html>            # 只跑 checklist
   py tools/pipeline.py validate <trip_data.json>    # 只跑数据闸
@@ -20,15 +20,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
 
 
-def run(step, cmd, must_fail_keywords=()):
+def run(step, cmd, must_fail_keywords=(), delete_on_fail=None):
     t0 = time.time()
     r = subprocess.run(cmd, capture_output=True)
     dur = time.time() - t0
     out = (r.stdout or b"").decode("utf-8", errors="replace") + (r.stderr or b"").decode("utf-8", errors="replace")
-    tail = "\n".join(out.strip().splitlines()[-3:]) if out.strip() else "(无输出)"
+    tail = "\n".join(out.strip().splitlines()[-12:]) if out.strip() else "(无输出)"
     print("── [%s] %s （%.0fs）" % ("OK" if r.returncode == 0 else "FAIL", step, dur))
     print(tail)
     if r.returncode != 0:
+        if delete_on_fail and os.path.exists(delete_on_fail):
+            os.remove(delete_on_fail)
+            print("已删除未过闸的输出: %s（避免漂掉的 HTML 留在盘上）" % delete_on_fail)
         print("⛔ 环节失败: %s（exit %d）——全链停止" % (step, r.returncode))
         sys.exit(1)
     return out
@@ -61,8 +64,12 @@ def main():
         run("② 渲染 gen", [PY, os.path.join(HERE, "gen_roadbook.py"), data, out_html])
         routes_info = run("③ 导览图注入", [PY, os.path.join(HERE, "apply_routes.py"), data, out_html])
         applied = "applied" in routes_info
+        base = os.path.join(HERE, "..", "assets", "路书_基准骨架.html")
+        run("④ 版式闸 consistency",
+            [PY, os.path.join(HERE, "consistency.py"), out_html, "--base", base],
+            delete_on_fail=out_html)
         vis = ["--visual"] if "--visual" in sys.argv else []
-        run("④ 成品闸", [PY, os.path.join(HERE, "checklist.py"), out_html] + vis)
+        run("⑤ 成品闸", [PY, os.path.join(HERE, "checklist.py"), out_html] + vis)
     except SystemExit:
         outcome = "FAILED"
         timer_mod.end_timer(rec_tag, outcome=outcome)

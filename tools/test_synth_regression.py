@@ -10,6 +10,7 @@ test_synth_regression.py —— 第 3 步「同路径离线回归」：3/8/10 �
 """
 import base64
 import copy
+import hashlib
 import io
 import json
 import os
@@ -21,6 +22,13 @@ import zlib
 from html.parser import HTMLParser
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+_PIN = json.load(io.open(os.path.join(os.path.dirname(HERE), "assets", "skeleton_pin.json"), encoding="utf-8"))
+_PIN_FP = _PIN["css_fingerprint"]
+
+
+def _css_fp(html):
+    m = re.search(r"<style[^>]*>(.*?)</style>", html, re.S)
+    return hashlib.md5(m.group(1).encode("utf-8")).hexdigest()[:10] if m else ""
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "fixtures"))
 sys.path.insert(0, HERE)
@@ -175,7 +183,7 @@ for n in (3, 8, 10):
     ok("R%d 返程日真图可完整解码" % n, pok, pdet)
     ok("R%d 返程日动线 SVG 含坐标+箭头" % n,
        "polyline" in seg and "data-arrow" in seg)
-    ok("R%d 骨架指纹在位" % n, "9f1fd4856f" in h)
+    ok("R%d 骨架指纹在位" % n, _css_fp(h) == _PIN_FP)
 
 # ---------- 四类变更实验（3 天册） ----------
 def rerender(book, tag):
