@@ -42,7 +42,9 @@
    "id": "t001",
    "name": "大皇宫",
    "text": "门票绑当日入场；8:30-15:30 售票（合成口径，购票时复核）",
-   "applicability": {"date": "12-11"}
+   "applicability": {
+    "date": "12-11"
+   }
   }
  ],
  "stays": [
@@ -64,10 +66,17 @@
    "id": "f001",
    "name": "9C8761 武汉→曼谷",
    "text": "D1 23:50 起飞——次日（D2）05:30 到达（红眼跨日，时区 +07:00）",
-   "applicability": {"flight_no": "9C8761", "dep_time": "23:50", "arr_time": "05:30",
-                     "duration_min": 400, "crosses_days": true,
-                     "dep_tz_area": "武汉", "arr_tz_area": "泰国",
-                     "dep_date": "2026-12-10", "arr_date": "2026-12-11"}
+   "applicability": {
+    "flight_no": "9C8761",
+    "dep_time": "23:50",
+    "arr_time": "05:30",
+    "duration_min": 400,
+    "crosses_days": true,
+    "dep_tz_area": "武汉",
+    "arr_tz_area": "泰国",
+    "dep_date": "2026-12-10",
+    "arr_date": "2026-12-11"
+   }
   }
  ],
  "transports": [],
@@ -168,6 +177,27 @@
    "theme": "红眼航班出发",
    "slots": [
     {
+     "id": "d1s5",
+     "t": "08:00",
+     "type": "meal",
+     "ref": null,
+     "text": "早餐·家中解决"
+    },
+    {
+     "id": "d1s6",
+     "t": "12:00",
+     "type": "meal",
+     "ref": null,
+     "text": "午餐·家中/途中解决"
+    },
+    {
+     "id": "d1s7",
+     "t": "18:00",
+     "type": "meal",
+     "ref": null,
+     "text": "晚餐·机场前解决（红眼航班无餐）"
+    },
+    {
      "id": "d1s1",
      "t": "20:00",
      "type": "note",
@@ -175,7 +205,10 @@
     },
     {
      "id": "d1s2",
-     "t": {"tr_ref": "f001", "field": "dep_time"},
+     "t": {
+      "tr_ref": "f001",
+      "field": "dep_time"
+     },
      "type": "flight",
      "ref": "f001",
      "text": "9C8761 起飞——次日 {arr} 到"
@@ -203,10 +236,20 @@
    "slots": [
     {
      "id": "d2s1",
-     "t": {"tr_ref": "f001", "field": "arr_time"},
+     "t": {
+      "tr_ref": "f001",
+      "field": "arr_time"
+     },
      "type": "flight",
      "ref": "f001",
      "text": "{arr} 到达曼谷（时区 +07:00）→入住考山路"
+    },
+    {
+     "id": "d2s5",
+     "t": "07:30",
+     "type": "meal",
+     "ref": null,
+     "text": "早餐·酒店"
     },
     {
      "id": "d2s2",
@@ -214,6 +257,20 @@
      "type": "spot",
      "ref": "t001",
      "text": "大皇宫（绑当日门票）"
+    },
+    {
+     "id": "d2s6",
+     "t": "12:30",
+     "type": "meal",
+     "ref": null,
+     "text": "午餐·大皇宫旁"
+    },
+    {
+     "id": "d2s7",
+     "t": "18:30",
+     "type": "meal",
+     "ref": null,
+     "text": "晚餐·考山路"
     }
    ],
    "meals": {
@@ -234,5 +291,19 @@
    "knowhow": "",
    "planb": ""
   }
- ]
+ ],
+ "overview_structured": {
+  "weather": [
+   {
+    "d": "12-10 周四",
+    "w": "多云 24—31°C",
+    "t": "炎热·防晒补水"
+   },
+   {
+    "d": "12-11 周五",
+    "w": "雷阵雨 24—32°C",
+    "t": "带伞·备室内方案"
+   }
+  ]
+ }
 }

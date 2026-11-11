@@ -119,6 +119,33 @@ def main():
                 print("%s  %s ~ %s  %s" % (r["tag"], r["start"], r["end"], r["human"]))
         else:
             print("(no records)")
+    elif cmd == "report":
+        # v128（交付文档自动汇总）：记录自动汇总成 markdown 计时表——TESTLOG 引用，不再手填「约多少分钟」
+        rows = []
+        if os.path.exists(LOG_FILE):
+            for line in io.open(LOG_FILE, encoding="utf-8"):
+                try:
+                    rows.append(json.loads(line))
+                except Exception:
+                    pass
+        lines = ["# 计时汇总（timer.py 自动生成 %s）" % time.strftime("%Y-%m-%d %H:%M:%S"), "",
+                 "## full 记录", "", "| 标签 | 起 | 止 | 时长 | 结果 |", "|---|---|---|---|---|"]
+        for r in rows:
+            if r.get("type") == "stage":
+                continue
+            lines.append("| %s | %s | %s | %s | %s |" % (r.get("tag"), r.get("start"), r.get("end"),
+                                                         r.get("human"), r.get("outcome", "")))
+        lines += ["", "## stage 阶段记录", "", "| 阶段 | 止于 | 时长 |", "|---|---|---|"]
+        for r in rows:
+            if r.get("type") == "stage":
+                lines.append("| %s | %s | %s |" % (r.get("stage"), r.get("end"), r.get("human")))
+        lines += ["", "> 时长=工具实测（time.now 差值），非估算。start 列=记录原值；stage 记录起点在切换时刻，"
+                      "无独立 start 字段属正常。"]
+        out = "计时汇总.md"
+        if "--out" in sys.argv:
+            out = sys.argv[sys.argv.index("--out") + 1]
+        io.open(out, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+        print("TIMER report written:", out, "(%d records)" % len(rows))
     else:
         print("unknown cmd:", cmd)
         sys.exit(2)

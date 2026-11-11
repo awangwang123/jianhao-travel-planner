@@ -32,7 +32,7 @@
    "text": "含 A/B/C 三区；16:30 停售",
    "price_display": "90 元",
    "applicability": {
-    "reservation": "公众号实名预约",
+    "reservation": "必须",
     "date": "11-07"
    }
   }
@@ -53,12 +53,20 @@
   {
    "id": "m001",
    "name": "示例早餐铺",
-   "text": "人均 12 元"
+   "text": "人均 12 元",
+   "billing": {
+    "included_in": "e003"
+   }
   },
   {
    "id": "m002",
    "name": "示例正餐",
    "text": "人均 60 元"
+  },
+  {
+   "id": "m003",
+   "name": "示例午餐铺",
+   "text": "人均 60—90；老城步行圈内，11:30 前入座免等位"
   }
  ],
  "flights": [],
@@ -71,11 +79,7 @@
     "dep_time": "09:00",
     "arr_time": "12:00"
    },
-   "text": "二等座票价以 12306 实价为准",
-   "billing": {
-    "optional": false,
-    "reason": ""
-   }
+   "text": "二等座票价以 12306 实价为准"
   },
   {
    "id": "tr002",
@@ -95,7 +99,11 @@
   {
    "id": "x001",
    "name": "旅行意外险（3 天）",
-   "text": "短期险常见档"
+   "text": "短期险常见档",
+   "billing": {
+    "optional": true,
+    "reason": "示例行=可选自选项示范（实购则另计 misc 明细）"
+   }
   }
  ],
  "expenses": [
@@ -131,6 +139,57 @@
    "verify_status": "verified",
    "checked_at": "2026-11-01",
    "source": "官网/官方公众号"
+  },
+  {
+   "id": "e003",
+   "ref": "s001",
+   "category": "住宿",
+   "label": "示例酒店双床房 2 晚",
+   "amount_min": 280,
+   "amount_max": 380,
+   "currency": "CNY",
+   "unit": "每间夜",
+   "qty": 2,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-11-01",
+   "source": "OTA 前台价区间+以预订页为准"
+  },
+  {
+   "id": "e004",
+   "ref": "m002",
+   "category": "餐饮",
+   "label": "示例正餐",
+   "amount_min": 80,
+   "amount_max": 120,
+   "currency": "CNY",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-11-01",
+   "source": "点评人均区间+以到店菜单为准"
+  },
+  {
+   "id": "e005",
+   "ref": "m003",
+   "category": "餐饮",
+   "label": "示例午餐",
+   "amount_min": 60,
+   "amount_max": 90,
+   "currency": "CNY",
+   "unit": "每人",
+   "qty": 1,
+   "price_mode": "含税",
+   "tier": "主选",
+   "pay_status": "待付",
+   "verify_status": "estimated",
+   "checked_at": "2026-11-01",
+   "source": "点评人均区间+以到店菜单为准"
   }
  ],
  "days": [
@@ -167,6 +226,13 @@
      "type": "transport",
      "ref": "tr001",
      "text": "抵达示例城市站——地铁赴市中心"
+    },
+    {
+     "id": "d1s9",
+     "t": "12:30",
+     "type": "meal",
+     "ref": "m003",
+     "text": "午餐·示例午餐铺（老城步行圈）"
     },
     {
      "id": "d1s4",
@@ -322,13 +388,11 @@
     },
     {
      "label": "示例酒店",
-     "time": "13:45",
      "arrive_mode": "taxi",
      "slot_ref": "d1s4"
     },
     {
      "label": "示例老街",
-     "time": "14:30",
      "arrive_mode": "walk",
      "slot_ref": "d1s5"
     }
@@ -342,7 +406,23 @@
    "示例城市｜武汉 → {date_range}｜2 成人"
   ],
   "warn_line": "出发前按当日预报与官方公示终判",
-  "weather": [],
+  "weather": [
+   {
+    "d": "11-06 周五",
+    "w": "多云 12—18°C",
+    "t": "适宜步行"
+   },
+   {
+    "d": "11-07 周六",
+    "w": "小雨 10—15°C",
+    "t": "带伞·备室内方案"
+   },
+   {
+    "d": "11-08 周日",
+    "w": "晴 11—17°C",
+    "t": "适宜户外"
+   }
+  ],
   "weather_note": "出发前 3 天按当日预报终判",
   "figure_html": "",
   "tail_note": ""
@@ -500,5 +580,9 @@
   "tail_body": "",
   "tail_cards": [],
   "tail_footer": null
+ },
+ "map_spec": {
+  "clear_routes": true,
+  "maps": {}
  }
 }

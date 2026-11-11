@@ -7,6 +7,7 @@ trip_data.json 校验器 v1.1 —— P3 M1（schema.md 的可执行形态）
 v1.1（2026-10-21）：新增 V11 组件关联稳定（slot.id / cam.slot_ref，Codex 变更实验立规）
 发布包注（2026-10-22）：V12/V13（WARN 级）与 V14（FAIL 级）为 M4/M5 迭代增量，原头注释停于 V11 系笔误，本包修正
 v1.2 增量：V15 路线语义闸 / V16 事实候选闸 / V18 费用三态闸 / V17 游玩开始闸（R5 终版口径：默认 09:30 起游玩，起床/吃饭/交通不入闸，bool early_ok 与 day.wake 均废弃）/ V20 时刻单源一致性闸（R6：slot.t ↔ transports dep/arr 对账，fact 派生配套）/ V19 跨日排天 + V21 时长自洽（时差直减拦）+ V22 门票日期绑定（R7：出境语义规则三条，各配好样本与必败反例）
+v1.20 候选九批（v128，M9C 复盘拍板）：V24 weather 形态闸（字符串数组渲染 TypeError 前移到生成前一次报出）/ V25 每日三餐覆盖闸（成品闸「每日餐行」前移，报错带 day 号修数据）/ V26 真底图导览数据闸（坐标占位 FAIL 禁编造；maps 空=显式 WARN 禁静默兜底）+ V 类 WARN 通道
 """
 import json, sys, io, os, re
 from datetime import date, datetime, time, timedelta
@@ -59,6 +60,9 @@ FIX_HINTS = {
     "V19": "跨日航班排天：到达日复现同 ref 且为紧邻次日凌晨到达；到达前不排活动、起飞后不排活动、出发当夜不订房；crosses_days=true 必须排到达 slot",
     "V21": "时长自洽：duration_min=官方飞行时长（实查）；arr=dep+duration+时差（vs_home_hours）——漏加时差即「时差直减」错误",
     "V22": "门票日期绑定：applicability.date 须在行程窗口内且与实际使用日一致（绑错日=当天进不了园）",
+    "V24": "overview_structured.weather 每项必须是 {d,w,t} 三个非空字符串键的对象——字符串数组渲染会 TypeError（M9C R4 实证）；空数组=缺按天天气格（家族基准件）",
+    "V25": "当天缺餐行：在 days[n].slots 补一条 type=meal 的 slot（ref 绑 meals 表、text 以「早餐·/午餐·/晚餐·」开头）——补数据不是拿无关 slot 补字面词过闸；确无该餐（如索道长间隔）在相关 slot 文案写明「午/晚餐…安排」自然覆盖",
+    "V26": "真底图导览数据：按 schema §5c 填 map_spec.maps（bbox/z/points 坐标须当次实查，禁编造——0/null 占位=未实查必拦）；确实出不了图（无网/瓦片源失败）保留 maps 空+交付说明声明示意稿口径",
 }
 
 
@@ -67,11 +71,17 @@ class V:
 
     def __init__(self):
         self.fails = []
+        self.warns = 0
 
     def fail(self, rule, where, msg):
         self.fails.append(rule)
         print("[FAIL] %s %s: %s" % (rule, where, msg))
         print("       🛠 修哪: %s" % FIX_HINTS.get(rule, "对照 schema.md"))
+
+    def warn(self, rule, msg):
+        """v1.20 候选九批：WARN 通道——不拦闸但必须显眼（合法路径的显式提示，禁静默）。"""
+        self.warns += 1
+        print("[WARN] %s %s" % (rule, msg))
 
     def ok(self, rule, msg):
         print("[PASS] %s %s" % (rule, msg))
@@ -442,6 +452,86 @@ def check_date_alignment(data, v):
         v.ok("V14", "每日日期与窗口推算一致（%d 天闭合）" % len(days))
 
 
+
+
+def check_weather_shape(data, v):
+    """V24（v1.20 候选九批，FAIL 级）: overview_structured.weather 形态闸——
+    字符串数组会在渲染层 TypeError（M9C R4/M9B 同病：全链跑完才发现白烧一轮），生成前一次报出。
+    每项必须 {d,w,t} 三键齐全非空字符串；空数组=缺按天天气格（家族基准件）。"""
+    ov = data.get("overview_structured") or {}
+    w = ov.get("weather")
+    if not isinstance(w, list) or not w:
+        v.fail("V24", "overview_structured.weather",
+               "缺失/空数组/非数组（实际 %s）——按天天气格（每天一条）是家族基准必填件" % type(w).__name__)
+        return
+    bad_types = [i for i, it in enumerate(w) if not isinstance(it, dict)]
+    if bad_types:
+        v.fail("V24", "overview_structured.weather",
+               "weather[%s] 不是 {d,w,t} 对象——字符串/其他形态渲染会 TypeError（M9C R4 实证）" % bad_types)
+        return
+    missing = ["weather[%d].%s" % (i, k) for i, it in enumerate(w) for k in ("d", "w", "t")
+               if not str(it.get(k) or "").strip()]
+    if missing:
+        v.fail("V24", "overview_structured.weather", "键缺失或空: %s" % ", ".join(missing))
+    else:
+        v.ok("V24", "weather 形态合法（%d 条 {d,w,t}）" % len(w))
+
+
+def check_meal_coverage(data, v):
+    """V25（v1.20 候选九批，FAIL 级）: 每日三餐覆盖闸——checklist「每日餐行」检查前移到生成前，
+    报错带 day 号，修=补餐行数据（ref 绑 meals 表）而非拿字面词凑闸。
+    判定窗口与 checklist 2b 口径一致（剥标签后前 18 字），两闸不打架：V25 查覆盖、checklist 查重复。"""
+    n_days, lack_days = 0, []
+    for dy in data.get("days", []):
+        n_days += 1
+        joined = " ".join(re.sub(r"<[^>]+>", "", str(s.get("text") or ""))[:18]
+                          for s in dy.get("slots", []))
+        lack = [x for x in ("早餐", "午餐", "晚餐") if x not in joined]
+        if lack:
+            lack_days.append((dy.get("day"), "、".join(lack)))
+    if lack_days:
+        for day_no, lack in lack_days:
+            v.fail("V25", "day%s" % day_no, "缺 %s——补餐行数据（type=meal 的 slot ref 绑 meals 表）" % lack)
+    else:
+        v.ok("V25", "每日三餐覆盖（%d 天，窗口 18 字与成品闸同口径）" % n_days)
+
+
+def check_map_spec(data, v):
+    """V26（v1.20 候选九批）: 真底图导览图数据闸——
+    坐标占位/类型错=FAIL（坐标必须当次实查，禁编造）；map_spec 缺失或 maps 空=合法但必须显式 WARN
+    （渲染将走竖向示意兜底，交付说明须声明示意稿口径——禁止静默退回已否定样式，M9 长沙实锤）。"""
+    spec = data.get("map_spec")
+    if not isinstance(spec, dict):
+        v.warn("V26", "map_spec 缺失——本册将无真底图导览图（渲染走竖向示意兜底）。"
+                      "要真底图按 schema §5c 填 maps（坐标当次实查禁编造）；不出图须在交付说明声明示意稿口径")
+        return
+    maps = spec.get("maps")
+    if not maps:
+        v.warn("V26", "map_spec.maps 为空——本册将无真底图导览图（渲染走竖向示意兜底）。"
+                      "要真底图按 schema §5c 填 maps（坐标当次实查禁编造）；不出图须在交付说明声明示意稿口径")
+        return
+    bad = []
+    for name, mp in maps.items():
+        bbox = mp.get("bbox")
+        if not (isinstance(bbox, list) and len(bbox) == 4
+                and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in bbox)):
+            bad.append("maps.%s.bbox 期望 4 个实查数值，实际 %r" % (name, bbox))
+        elif not (bbox[0] < bbox[2] and bbox[1] < bbox[3]):
+            bad.append("maps.%s.bbox min/max 倒置" % name)
+        z = mp.get("z")
+        if not (isinstance(z, int) and not isinstance(z, bool) and 3 <= z <= 18):
+            bad.append("maps.%s.z 期望整数 3—18，实际 %r" % (name, z))
+        for pi, p in enumerate(mp.get("points", []) or []):
+            ll = p.get("lonlat")
+            if not (isinstance(ll, list) and len(ll) == 2
+                    and all(isinstance(x, (int, float)) and not isinstance(x, bool) and x != 0 for x in ll)):
+                bad.append("maps.%s.points[%s].lonlat 期望两个实查数值（0/null 占位=未实查，禁编造），实际 %r"
+                           % (name, p.get("key", pi), ll))
+    if bad:
+        for b in bad:
+            v.fail("V26", "map_spec", b)
+    else:
+        v.ok("V26", "map_spec 数据合法（%d 图：bbox/z/坐标全填）" % len(maps))
 
 
 def check_structured_fields(data, v):
@@ -1287,6 +1377,9 @@ def main():
     flight_crossday_check(data, v)
     flight_duration_check(data, v)
     ticket_date_binding_check(data, v)
+    check_weather_shape(data, v)
+    check_meal_coverage(data, v)
+    check_map_spec(data, v)
     check_structured_fields(data, v)
     summary = budget_calc(data, v)
 
@@ -1298,7 +1391,8 @@ def main():
             print("（预算明细已写 %s）" % budget_out)
 
     print("")
-    print("RESULT: %s" % ("PASS" if not v.fails else "FAIL(%d)" % len(v.fails)))
+    warn_note = "（%d WARN）" % v.warns if v.warns else ""
+    print("RESULT: %s%s" % ("PASS" if not v.fails else "FAIL(%d)" % len(v.fails), warn_note))
     sys.exit(0 if not v.fails else 1)
 
 

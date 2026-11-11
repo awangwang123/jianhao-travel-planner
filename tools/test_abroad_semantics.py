@@ -192,7 +192,12 @@ def make_cross_year(p):
     p["days"][0]["date"] = "12-31"
     p["days"][1]["date"] = "01-01"
     p["days"].append({"day": 3, "date": "01-02", "weekday": "六", "city": "曼谷", "theme": "返程",
-                      "slots": [], "meals": {"早餐": None, "午餐": None, "晚餐": None},
+                      "slots": [  # v128（V25 三餐闸）：返程日同样补三餐，空 slots 天会被如实报缺
+                          {"id": "d3s1", "t": "09:00", "type": "meal", "ref": None, "text": "早餐·酒店"},
+                          {"id": "d3s2", "t": "12:00", "type": "meal", "ref": None, "text": "午餐·商场简餐"},
+                          {"id": "d3s3", "t": "18:30", "type": "meal", "ref": None, "text": "晚餐·机场"},
+                      ],
+                      "meals": {"早餐": None, "午餐": None, "晚餐": None},
                       "stay": None, "cam": [], "knowhow": "", "planb": ""})
     ticket(p)["applicability"]["date"] = "01-01"  # 绑定日随窗口同步（01-01 应解析到 2027）
     return p

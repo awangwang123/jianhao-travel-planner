@@ -240,10 +240,21 @@ else:
 style = re.search(r"<style[^>]*>(.*?)</style>", t, re.S)
 if style:
     fp = hashlib.md5(style.group(1).encode()).hexdigest()[:10]
-    if fp == "9f1fd4856f":
+    # v1.12（v128 改造，M9C 实证工具常量落后案）：基准指纹从随包 assets/路书_基准骨架.html 现算——
+    # 单一正本，消除「内置常量 vs 随包基准」双值漂移；不是关闭检查，也不是拿成品自证。
+    base_fp = None
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "路书_基准骨架.html")
+    if os.path.exists(_base):
+        _m = re.search(r"<style[^>]*>(.*?)</style>", open(_base, encoding="utf-8", errors="replace").read(), re.S)
+        if _m:
+            base_fp = hashlib.md5(_m.group(1).encode()).hexdigest()[:10]
+    if base_fp is None:
+        base_fp = "9f1fd4856f"  # 兜底旧值：仅当包内基准缺失（解包不完整）时使用
+        addw("骨架指纹基准", "包内 assets/路书_基准骨架.html 缺失——退回内置旧值比对，请检查解包完整性（用 setup_pack.py 重解）")
+    if fp == base_fp:
         addp("骨架指纹", fp)
     else:
-        addw("骨架指纹", f"{fp} ≠ 基准 9f1fd4856f——若是刻意改样式需在交付说明注明，否则=派生自旧骨架")
+        addw("骨架指纹", f"{fp} ≠ 基准 {base_fp}——若是刻意改样式需在交付说明注明，否则=派生自旧骨架")
 else:
     addw("骨架指纹", "未找到 style 块")
 
@@ -337,14 +348,17 @@ def _sec_txt(sid):
         return None
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"data:image/[^\"]+", "", m.group(0))))
 
-brand_words = ["全季", "亚朵", "汉庭", "如家", "维也纳", "希尔顿", "万豪", "凯悦", "香格里拉", "民宿", "客栈", "青旅", "搜「", "连锁"]
+# v1.12（v128 改造，M9C R6 实证）：住宿落脚点判定从品牌枚举词表改为业态后缀——品牌词表永远追不全
+# （长沙「雅致/欢致」不在表内被误判缺店名，内容真有=检查器病被误当内容缺失，制作侧被迫补「连锁」凑闸
+# =诱导改文案）。真实店名几乎必然带业态后缀，后缀判定不诱导补词；泛词误报由人工复核兜底（7g 定位）。
+stay_words = ["酒店", "饭店", "宾馆", "民宿", "客栈", "青旅", "公寓", "度假村", "山庄", "旅馆", "招待所", "搜「", "连锁"]
 checks_7g = []
 st = _sec_txt("stay")
 if st is not None:
-    has_brand = any(w in st for w in brand_words)
+    has_brand = any(w in st for w in stay_words)
     has_price = ("元" in st or "¥" in st)
     if not (has_brand and has_price):
-        checks_7g.append(("住宿无具体落脚点", "缺品牌店名/搜索关键词或价格区间——只给片区=老毛病（v3.45 必答①店名）"))
+        checks_7g.append(("住宿无具体落脚点", "缺店名（含业态后缀如「XX酒店/民宿」）或搜索关键词或价格区间——只给片区=老毛病（v3.45 必答①店名）"))
 et = _sec_txt("eat")
 if et is not None:
     if "升级体验" not in et:

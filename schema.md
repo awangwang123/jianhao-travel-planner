@@ -240,7 +240,7 @@
 
 ## 5c. map_spec 真底图导览图（v1.20 新增，tools/route_map.py 数据驱动）
 
-导览图=通用渲染器（`route_map.py`）+`trip_data.json` 顶层 `map_spec` 数据——**换目的地填数据，不改工具**（替代每册手写地图脚本）。空缺=无图（合法）。
+导览图=通用渲染器（`route_map.py`）+`trip_data.json` 顶层 `map_spec` 数据——**换目的地填数据，不改工具**（替代每册手写地图脚本）。空缺=无图（合法），但**不静默**：maps 空时数据闸 WARN+route_map 显式声明「本册无真底图」，渲染走竖向示意兜底时交付说明必须声明示意稿口径（禁静默退回已否定样式）；坐标/占位值由 V26 把关（禁编造）。模板已带 `map_spec` 骨架（maps 空）——正常交付填 maps，坐标当次实查。
 
 ```json
 "map_spec": {
@@ -298,3 +298,6 @@
 | V21 | 跨时区时长自洽闸（v1.2 R9 重写，FAIL 级，出境语义②）：**完整当地日期时间核对**——expected_arr = dep_date+dep_time+duration_min+时差，与 arr_date+arr_time 差 ≤10min（时长多填一天必拦，钟面取模旧法已废）；**输入完备强制**——flights 表非空时缺 dep/arr_time、duration_min、日期、航段时区任一=「未检」FAIL 阻断验收（有航班缺输入≠不适用，不适用仅限无航班） |
 | V22 | 门票日期绑定闸（v1.2 R8 重写，FAIL 级，出境语义③）：绑定日经 `_resolve_date` 解析（YYYY-MM-DD 直用；MM-DD 结合窗口定年——**支持跨年窗口**，统一换年份的旧法已废）须落入窗口，且与实际使用日一致（绑错日=当天进不了园）；未绑定不拦 |
 | V23 | 结构化字段形态预检（v1.20 新增，FAIL 级）：`prep.cards[]` 须含 card_attr/eyebrow/lead_p(str) 与非空 items[{id,html,hot?}]；`tips.tail_cards[]` 每项须含 `<div` 的原生 HTML 字符串（{h4,p} 形态拒）；`boost.items[]` 每项须 {html,mt10?} dict（裸字符串拒）；`day_brief` head/widths 等长、rows[].seg 必填、from/to 的 slot ref 必须挂本日。空容器合法；逐条聚合一次报出全部路径 |
+| V24 | weather 形态闸（v1.20 候选九批，FAIL 级）：`overview_structured.weather` 每项须 {d,w,t} 三键非空字符串对象；字符串数组渲染 TypeError（实证案）在生成前一次报出；空数组=缺按天天气格（家族基准件） |
+| V25 | 每日三餐覆盖闸（v1.20 候选九批，FAIL 级）：每天 slots（剥标签前 18 字窗口，与成品闸同口径）须覆盖早/午/晚餐段词——缺哪餐报哪天，修=补 type=meal 的 slot 绑 meals 表 ref（补数据，不是拿字面词凑闸） |
+| V26 | 真底图导览数据闸（v1.20 候选九批）：map_spec.maps 非空时 bbox（4 数值 min<max）/z（3—18 整数）/points[].lonlat（两个实查数值，0/null 占位=未实查）逐项校验，占位坐标=FAIL（禁编造）；map_spec 缺失或 maps 空=合法但显式 WARN（渲染走竖向示意兜底，交付说明须声明示意稿口径——禁静默退回已否定样式） |

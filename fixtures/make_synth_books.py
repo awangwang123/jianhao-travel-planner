@@ -35,6 +35,9 @@ def make_book(n_days):
              "text": "早餐·合成宾馆"},
             {"id": "d%ds2" % i, "t": "10:30", "type": "spot", "ref": tid,
              "text": "<b>合成景点%d</b>：样张正文，含机位地点" % i},
+            # v128（V25 每日三餐覆盖闸）：合成样张同步真实形态——每天三餐齐（时间序插在 10:30 与 14:00 之间）
+            {"id": "d%ds8" % i, "t": "12:10", "type": "meal", "ref": None,
+             "text": "午餐·合成食肆"},
             {"id": "d%ds3" % i, "t": "14:00", "type": "spot", "ref": None,
              "text": "<b>合成看点%d</b>：下午慢逛" % i},
             {"id": "d%ds4" % i, "t": "18:00", "type": "meal", "ref": None,

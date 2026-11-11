@@ -169,8 +169,12 @@ def main():
     data_path = os.path.abspath(sys.argv[1])
     d = json.load(io.open(data_path, encoding="utf-8"))
     spec = d.get("map_spec")
-    if not spec:
-        print("no map_spec in data -- skip (mapless book is valid)")
+    if not isinstance(spec, dict) or not spec.get("maps"):
+        # v1.20 候选九批（v128，M9 实证）：禁静默跳过——无真底图必须显式声明，
+        # 制作侧与 pipeline 输出都能看到，杜绝「渲染静默退回已否定样式」无感知通过。
+        print("WARN: no map_spec / maps empty -> NO real-basemap guide map this book.")
+        print("  Rendering falls back to schematic SVG; declare schematic wording in")
+        print("  delivery notes, or fill map_spec per schema.md 5c (survey coords, no fabrication).")
         return
     _SLOTS = {}
     for dy in d["days"]:

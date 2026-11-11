@@ -10,12 +10,16 @@
   - manifest.json 累积元数据（文件/作者/许可/图注/SHA256），署名清单 md 由它生成
 """
 import argparse
+import base64
+import copy
 import hashlib
 import io
 import json
 import os
 import re
+import shutil
 import sys
+import time
 import urllib.parse
 import urllib.request
 
@@ -131,6 +135,76 @@ def cmd_manifest(args):
     print("manifest md written:", out, "(%d images)" % len(items))
 
 
+def cmd_embed(args):
+    """v1.20 候选九批（v128，M9C 实证）：配图回填正式入口——只写 days[n].photos_html 一个字段。
+    禁制作侧手写脚本整份覆盖 trip_data（M9C inject_photos 用旧数据覆盖已修数据=restore_fixes 全量重放案）。
+    plan.json 形态: {"1": [{"file": "xxx.jpg", "cap": "图注（非实拍须含「（示意）」）}, ...], "2": [...]}
+    artist/license 自动从 images/manifest.json 补齐（fetch 时已登记）；宽高 PIL 实读（禁手填）。
+    保障: 写前留底 .bak-embed-时间戳；写后深比对断言——除目标 photos_html 外零变化。"""
+    data_p = os.path.abspath(args.data)
+    d = json.load(io.open(data_p, encoding="utf-8"))
+    plan = json.load(io.open(os.path.abspath(args.plan), encoding="utf-8"))
+    imgdir = os.path.abspath(args.out)
+    manifest = {x.get("file"): x for x in _load_manifest(imgdir)}
+    try:
+        from PIL import Image
+    except ImportError:
+        print("FAIL: PIL unavailable — py -m pip install pillow")
+        sys.exit(1)
+    per_day = {}
+    for day_s, items in plan.items():
+        try:
+            n = int(day_s)
+        except ValueError:
+            print("FAIL: plan key %r 不是 day 数字" % day_s)
+            sys.exit(1)
+        if not (1 <= n <= len(d.get("days", []))):
+            print("FAIL: plan day %s 超出范围 (1..%d)" % (day_s, len(d.get("days", []))))
+            sys.exit(1)
+        if len(items) not in (2, 4):
+            print("FAIL: day %s 配 %d 张——配图对称律=每日 2 或 4 张，禁 3（.photos 两列网格）" % (n, len(items)))
+            sys.exit(1)
+        figs = []
+        for it in items:
+            fn = os.path.join(imgdir, it["file"])
+            if not os.path.exists(fn):
+                print("FAIL: 图片不存在: %s（先 fetch 再 embed）" % it["file"])
+                sys.exit(1)
+            try:
+                im = Image.open(fn)
+                im.load()
+            except Exception as e:
+                print("FAIL: 图片损坏（PIL 校验不过）: %s — %s" % (it["file"], str(e)[:60]))
+                sys.exit(1)
+            w, h = im.size
+            meta = manifest.get(it["file"], {})
+            cap = it.get("cap") or meta.get("note") or ""
+            artist = meta.get("artist") or it.get("artist") or ""
+            lic = meta.get("license") or it.get("license") or ""
+            ext = "jpeg" if fn.lower().endswith((".jpg", ".jpeg")) else "png"
+            b64 = base64.b64encode(open(fn, "rb").read()).decode("ascii")
+            figs.append('<figure><img src="data:image/%s;base64,%s" alt="%s" width="%d" height="%d">'
+                        '<figcaption>%s · 图：%s / Wikimedia Commons · %s</figcaption></figure>'
+                        % (ext, b64, cap, w, h, cap, artist, lic))
+        per_day[n] = "\n".join(figs)
+    bak = data_p + ".bak-embed-" + time.strftime("%Y%m%d_%H%M%S")
+    shutil.copy2(data_p, bak)
+    before = json.load(io.open(data_p, encoding="utf-8"))
+    for n, html in per_day.items():
+        d["days"][n - 1]["photos_html"] = html
+    # 深比对断言：预期态=写前数据仅替换目标 photos_html——任何其他字段变化=内部错误，拒绝落盘
+    expected = copy.deepcopy(before)
+    for i, dy in enumerate(expected.get("days", [])):
+        if (i + 1) in per_day:
+            dy["photos_html"] = per_day[i + 1]
+    if expected != d:
+        print("FAIL: 检测到 photos_html 之外的字段变化（内部错误）——未落盘，数据未动")
+        sys.exit(1)
+    io.open(data_p, "w", encoding="utf-8").write(json.dumps(d, ensure_ascii=False, indent=1))
+    print("EMBED_OK: %d 天已更新 | 只写 photos_html（深比对断言过）| 留底 %s"
+          % (len(per_day), os.path.basename(bak)))
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -146,6 +220,12 @@ def main():
     mp = sub.add_parser("manifest")
     mp.add_argument("--out", default="")
     mp.set_defaults(fn=cmd_manifest)
+    ep = sub.add_parser("embed",
+                        help="把已亲验图片回填 trip_data 的每日 photos_html（只动这一个字段）")
+    ep.add_argument("data")
+    ep.add_argument("--plan", required=True, help="plan.json: {day: [{file, cap}, ...]}")
+    ep.add_argument("--out", default=str(DEFAULT_DIR))
+    ep.set_defaults(fn=cmd_embed)
     args = ap.parse_args()
     args.fn(args)
 
