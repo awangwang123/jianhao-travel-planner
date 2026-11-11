@@ -19,7 +19,8 @@ _NUM = r"-?[\d.]+"
 
 
 def _attr(tag, name):
-    m = re.search(r'\b%s="(%s)"' % (name, _NUM), tag)
+    # v1.13 引号兼容：route_map 产物属性用单引号（cx='669'），双引号硬编码致 circle 全部漏读=partial 假阻断
+    m = re.search(r'''\b%s\s*=\s*["'](%s)["']''' % (name, _NUM), tag)
     return float(m.group(1)) if m else None
 
 
@@ -31,17 +32,19 @@ def check_svg_bounds(t):
 
     for sm in re.finditer(r'<svg\b([^>]*)>(.*?)</svg>', t, re.S):
         attrs, body = sm.group(1), sm.group(2)
-        if 'viewBox="' not in attrs:
+        # v1.13 引号兼容：route_map 产物用单引号 viewBox='…'（M9D 实证：双引号硬编码致成品层出界机检
+        # 整段 SKIP 假绿——生成端 A3 有数学断言兜底，但成品层闸形同虚设）
+        if not re.search(r'''viewBox\s*=\s*["']''', attrs):
             continue  # 无坐标系的 svg（装饰件）不在导览图判定范围
         total += 1
-        cls = re.search(r'class="([^"]*)"', attrs)
+        cls = re.search(r'class="([^"]*)"', attrs) or re.search(r"class='([^']*)'", attrs)
         if not cls or not any(k in cls.group(1) for k in CLASS_KEYS):
             unrecognized += 1
             continue
         idx += 1
         tagname = "SVG#%d" % idx
 
-        vm = re.search(r'viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"', attrs)
+        vm = re.search(r'''viewBox=["']0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)["']''', attrs)
         if not vm:
             partial.append(tagname + " viewBox 非「0 0 宽 高」起点，坐标语义未定未检")
             continue
