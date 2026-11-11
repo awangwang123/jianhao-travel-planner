@@ -291,6 +291,13 @@
    "theme": "第二天主题",
    "slots": [
     {
+     "id": "d2s0",
+     "t": "08:00",
+     "type": "meal",
+     "ref": null,
+     "text": "早餐·酒店"
+    },
+    {
      "id": "d2s1",
      "t": "09:30",
      "type": "spot",
@@ -303,6 +310,13 @@
      "type": "meal",
      "ref": "m002",
      "text": "午餐·就近"
+    },
+    {
+     "id": "d2s3",
+     "t": "18:30",
+     "type": "meal",
+     "ref": null,
+     "text": "晚餐·示例街区夜市"
     }
    ],
    "meals": {
@@ -348,6 +362,20 @@
      "type": "transport",
      "ref": "tr001",
      "text": "返程抵达武汉"
+    },
+    {
+     "id": "d3s3",
+     "t": "12:30",
+     "type": "meal",
+     "ref": null,
+     "text": "午餐·车站简餐"
+    },
+    {
+     "id": "d3s4",
+     "t": "18:30",
+     "type": "meal",
+     "ref": null,
+     "text": "晚餐·到家简单吃"
     }
    ],
    "meals": {

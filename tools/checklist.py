@@ -202,6 +202,22 @@ elif _svg["partial"] or _svg["unrecognized"]:
 else:
     addp("动线图出界", "%d 张导览图坐标全在框内（容差 2px）" % _svg["checked"])
 
+# ---------- 2d. 导览图真底图在位性（v1.13/v128 收口：数据闸 WARN 不代替成品拦截——
+# 缺真底图的册子此前可带 WARN 一路绿灯到交付（指纹一致只证样式同源，证不了真底图实际生成）。
+# 形态判据：真底图=zoomable SVG 内嵌 <image> PNG base64（route_map 产物）；竖向示意兜底=route-svg 纯线条。） ----------
+_zoom_n = len(re.findall(r"<svg[^>]*class=['\"]zoomable['\"][^>]*>", t))
+_baseimg_n = len(re.findall(r"<image[^>]*(?:xlink:)?href=['\"]data:image/png;base64,", t))
+_rsvg_n = len(re.findall(r"<svg[^>]*class=['\"]route-svg['\"][^>]*>", t))
+if _zoom_n and _baseimg_n:
+    extra = "；另有 %d 张竖向兜底残留（建议 map_spec.clear_routes 退役竖向数据）" % _rsvg_n if _rsvg_n else ""
+    addp("导览图真底图", "%d 张真底图导览图在位（内嵌底图）%s" % (_zoom_n, extra))
+elif _rsvg_n and not _zoom_n:
+    addf("导览图真底图", "%d 张竖向示意兜底、真底图 0 张——本册未达完整交付标准；"
+         "确认降级（无网/瓦片源失败）须在交付说明声明示意稿口径，且不计完整交付达标" % _rsvg_n)
+else:
+    addf("导览图真底图", "未检出真底图导览图（zoomable %d/内嵌底图 %d/竖向兜底 %d）——完整路书必含真底图导览图"
+         % (_zoom_n, _baseimg_n, _rsvg_n))
+
 # ---------- 3. author 资格 ----------
 if '<section id="author"' in t:
     addw("author 选装件", "author 区块存在——资格制（v3.37）：仅当作者对该目的地有真实推荐资历才保留，否则删区块+删导航项（山东案：非武汉却带 author=越权）")
