@@ -175,6 +175,16 @@ def cmd_new(args):
     data["meta"]["destination"] = args.dest
     data["meta"]["date_window"] = {"start": start.isoformat(),
                                    "end": (start + datetime.timedelta(days=args.days - 1)).isoformat()}
+    # v128（洁净室验收抓的 new 缺口）：窗口平移后示例票的绑定日同步——否则新骨架开跑即 V22 FAIL
+    # （模板示例票默认 D2 使用：applicability.date=窗口第 2 天；单日窗口兜底=D1）
+    last_day = start + datetime.timedelta(days=args.days - 1)
+    use_day = start + datetime.timedelta(days=1)
+    if use_day > last_day:
+        use_day = start
+    for tk in data.get("tickets", []):
+        ap = tk.get("applicability")
+        if isinstance(ap, dict) and ap.get("date"):
+            ap["date"] = use_day.strftime("%m-%d")
     out = os.path.join(args.dir, "trip_data.json")
     os.makedirs(args.dir, exist_ok=True)
     io.open(out, "w", encoding="utf-8").write(_json.dumps(data, ensure_ascii=False, indent=1))
