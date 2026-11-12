@@ -207,7 +207,16 @@ def r_day(d, I):
             t_disp = resolve_slot_t(t_disp, I, "days[%s] slot %s" % (d.get("day"), s.get("id")))
         if isinstance(t_disp, dict):
             t_disp = fact_display(t_disp, "days[%s] slot %s" % (d.get("day"), s.get("id")))
-        parts.append(slot(t_disp, body + cam_html, ref, s.get("id")))
+        # v1.20 候选十批（M9D 对照实证，验收标准②）：普通接驳（无班次 ref 的市内交通）渲染为
+        # 紧凑依附行——视觉上不与体验段并列抢主线；守时项（有 ref 的高铁/航班/预约接驳）保持
+        # 独立醒目（正常 slot 形态）。DOM 结构不变（slot 容器/data-slot-id 保留），机械检查不受影响。
+        if (s.get("type") == "transport") and not ref:
+            parts.append('<div class="slot" data-slot-id="%s">'
+                         '<div class="slot-time" style="font-size:.82rem;color:var(--ink3)">%s</div>'
+                         '<div class="slot-body" style="font-size:.88rem;color:var(--ink2)">%s</div></div>'
+                         % (esc(s.get("id") or ""), esc(t_disp), body + cam_html))
+        else:
+            parts.append(slot(t_disp, body + cam_html, ref, s.get("id")))
     # 餐段=融进 slots 文本（家族形态：「早餐·XX：<b>」时段块）；尾部不再补餐行
     # （旧版 meals 尾部补渲=早餐错排到当天末尾；数据 meals 仅作关联备查）
     for c in (d.get("cam") or []):  # 无 slot_ref 的机位兜底（不绑时段的全天型机位，排当日尾部）

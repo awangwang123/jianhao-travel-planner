@@ -122,6 +122,59 @@ def svg_wrap(base_png, body, note1, note2):
         "</svg>" % (w, h, w, h, style, b64, w, h, body, h - 14, FS_NOTE, note1, h - 34, FS_NOTE, note2)
     )
 
+def auto_layout(points, pos, W, H):
+    """v1.20 候选十批（M9D 复盘实证：防出界 anchor/dy 人工推算占制作侧约 4 分钟——自动布标替代）。
+    未显式指定 anchor/dx/dy 的点：按图内位置自动选边（右 40% 左展/左 40% 右展）+垂直默认位+
+    碰撞避让（标签矩形与已放置标签相交则 dy 步进尝试）；spec 显式指定的点照用制作侧值并登记占位。
+    返回 [(point, anchor, dx, dy)]；仍出界的极端情形由 A3 出界审计兜底报 WARN。"""
+    placed = []
+
+    def est_w(label):
+        return int(FS * sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in label))
+
+    def rect(x, y, anchor, dx, dy, w):
+        tx = x + dx - (w / 2 if anchor == "middle" else (w if anchor == "end" else 0))
+        return (tx, y + dy - FS, tx + w, y + dy + 4)
+
+    def hits(r):
+        return any(not (r[2] < q[0] or r[0] > q[2] or r[3] < q[1] or r[1] > q[3]) for q in placed)
+
+    def out(r):
+        return r[0] < 0 or r[2] > W or r[1] < 0 or r[3] > H
+
+    layout = []
+    for p in points:
+        x, y = pos[p["key"]]
+        label = p["label"] + ("" if p.get("solid", True) else "（示意）")
+        w = est_w(label)
+        if ("anchor" in p) or ("dx" in p) or ("dy" in p):
+            a = p.get("anchor", "start")
+            dx = int(p.get("dx", 14))
+            dy = int(p.get("dy", -12))
+            placed.append(rect(x, y, a, dx, dy, w))
+            layout.append((p, a, dx, dy))
+            continue
+        a = "end" if x > W * 0.6 else "start"
+        dx = -14 if a == "end" else 14
+        base = 16 if y < H * 0.15 else (-16 if y > H * 0.85 else -12)
+        chosen = None
+        fallback = None
+        for dy in (base, base + 18, base - 18, base + 36, base - 36, base + 54, base - 54):
+            r = rect(x, y, a, dx, dy, w)
+            if out(r):
+                continue
+            if not hits(r):
+                chosen = (a, dx, dy, r)
+                break
+            if fallback is None:
+                fallback = (a, dx, dy, r)
+        if chosen is None:
+            chosen = fallback or (a, dx, base, rect(x, y, a, dx, base, w))
+        placed.append(chosen[3])
+        layout.append((p, chosen[0], chosen[1], chosen[2]))
+    return layout
+
+
 def dot(x, y, place, solid=True, anchor="start", dx=14, dy=-12):
     label = place if solid else place + "（示意）"
     est_w = int(FS * sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in label))
@@ -211,11 +264,10 @@ def main():
             body.append(path([pos[k] for k in ln["via"]],
                              DASH_BUS if ln.get("dash") else "",
                              int(ln.get("width", 6))))
-        for p in mp["points"]:
+        for p, _a, _dx, _dy in auto_layout(mp["points"], pos, meta["w"], meta["h"]):
             x, y = pos[p["key"]]
             body.append(dot(x, y, p["label"], solid=p.get("solid", True),
-                            anchor=p.get("anchor", "start"), dx=int(p.get("dx", 14)),
-                            dy=int(p.get("dy", -12))))
+                            anchor=_a, dx=_dx, dy=_dy))
         rows = []
         for i, r in enumerate(mp.get("list", [])):
             rows.append({"place": r["place"],

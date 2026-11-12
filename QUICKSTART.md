@@ -27,6 +27,11 @@ py tools/pipeline.py outline pkg_work/trip_data.json
 #      0/null 占位 V26 必拦）；不填则成品无真底图（V26 WARN 提醒），交付说明须声明示意稿口径
 #    · 每天三餐=type=meal 的 slot 各绑 meals 表 ref（V25 缺哪餐报哪天）；早餐含房费用
 #      billing.included_in 示范（模板 m001）
+#    · 总览导语（v1.20 候选十批）：overview_structured.leads 两条——lead[0]=这趟玩什么+逐日节奏
+#      （画面感表述），lead[1]=驻点+地理逻辑（动线圆心/行李搬动次数）；参数行渲染器自动出
+#    · 市内接驳 slot（type=transport 无 ref）渲染自动紧凑化，班次（有 ref）保持醒目——
+#      填写时把接驳写短（几点/什么方式/多久），玩法细节放进对应游玩 slot
+#    · map_spec 标签不用手工调 anchor/dx/dy——工具自动布标+避让；只有自动结果不理想才显式指定
 
 # 3. 配图（成品每日配图是硬要求；无 API key 用 Commons）
 py tools/fetch_images.py search "洛阳 龙门石窟" --limit 5
