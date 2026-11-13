@@ -145,13 +145,20 @@ def auto_layout(points, pos, W, H):
     all_dots = [(pos[p["key"]][0], pos[p["key"]][1]) for p in points]
 
     def hit_dot(r):
-        # 标签矩形 vs 全部点圈（r=11+白描边余量 3）——M10 overview 实证：只避标签不避点，
-        # 南昌西站标签横穿三点点簇、秋水广场贴擦自己圈顶，视觉切圈。
-        return any(not (r[2] < cx - 14 or r[0] > cx + 14 or r[3] < cy - 14 or r[1] > cy + 14)
-                   for cx, cy in all_dots)
+        # 标签矩形 vs 全部点圈：矩形最近点到点心的圆形精确距离 < 12（圈 r11+1px 呼吸）判撞。
+        # 白描边相触不算撞（白边本为可读性设计，黑字压红圈面才算）——原 ±14 方框判定在角部
+        # 过保守，曾拒掉文字距圈 1px 合法间隙的近位解（M10 驻点 end 位被滕王阁点框贴面拒案）。
+        def _d(px, py):
+            nx = max(r[0], min(px, r[2])); ny = max(r[1], min(py, r[3]))
+            return ((nx - px) ** 2 + (ny - py) ** 2) ** 0.5
+        # 判撞线=12（圈面 r11 + 1px 呼吸）：黑字压红圈面才是缺陷（dist<11）；白描边相触白描边
+        # 不可见（白边本为可读性设计）——12~13 之间的候选合法，与渲染层断言同口径（r+1）
+        return any(_d(cx, cy) < 12 for cx, cy in all_dots)
+
+    NOTE_BAND = 52   # 底部两行说明（FS_NOTE=15×2+边距）——标签禁入，M10 驻点压「当次拉取」案
 
     def out(r):
-        return r[0] < 0 or r[2] > W or r[1] < 0 or r[3] > H
+        return r[0] < 0 or r[2] > W or r[1] < 0 or r[3] > H or r[3] > H - NOTE_BAND
 
     def place_one(x, y, w):
         """为单个点选位：首选边→换边→middle 居中错位→fallback（只避点圈的次优）→None。
@@ -259,6 +266,17 @@ def dot(x, y, place, solid=True, anchor="start", dx=14, dy=-12):
         "stroke='#ffffff' stroke-width='5' paint-order='stroke' text-anchor='%s'>%s</text>"
         % (x + dx, ty, FS, anchor, label)]))
 
+def leader_line(x, y, rx1, ry1, rx2, ry2):
+    """远位标签引线（2026-11-13 WW 口径：读者不猜就知道标签对应哪个点——
+    自动布标在密集簇可能给出远位解，零碰撞≠归属清晰；文字没重叠不代表读者知道它指哪个点）。
+    从点圈边缘到标签字形框最近点的细实线；实线细线与动线（粗）/车行段（虚）区分。"""
+    nx = max(rx1, min(x, rx2)); ny = max(ry1, min(y, ry2))
+    dist = ((nx - x) ** 2 + (ny - y) ** 2) ** 0.5 or 1
+    ux, uy = (nx - x) / dist, (ny - y) / dist
+    return ("<line x1='%d' y1='%d' x2='%d' y2='%d' stroke='%s' stroke-width='1.5' opacity='0.55'/>"
+            % (round(x + ux * 14), round(y + uy * 14), round(nx), round(ny), C_MAIN))
+
+
 def path(points, dash, width=6):
     pts = " ".join("%d,%d" % p for p in points)
     dashattr = "stroke-dasharray='%s'" % dash if dash else ""
@@ -328,9 +346,50 @@ def main():
             body.append(path([pos[k] for k in ln["via"]],
                              DASH_BUS if ln.get("dash") else "",
                              int(ln.get("width", 6))))
-        for p, _a, _dx, _dy in auto_layout(mp["points"], pos, meta["w"], meta["h"]):
+        # 预收集全部标签字形框（引线遮挡判定用）
+        _layout = auto_layout(mp["points"], pos, meta["w"], meta["h"])
+        _frames = []
+        for p, _a, _dx, _dy in _layout:
+            label = p["label"] + ("" if p.get("solid", True) else "（示意）")
+            _w = int(FS * sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in label))
+            _tx = x0 = pos[p["key"]][0] + _dx - (_w / 2 if _a == "middle" else (_w if _a == "end" else 0))
+            _ty = pos[p["key"]][1] + _dy
+            _frames.append((p["key"], _tx, _ty - FS - 4, _tx + _w, _ty + 7))
+
+        def _seg_in_rect(x1, y1, x2, y2, fr):
+            # fr=(tx, ry1, rx2, ry2)：x 区间=[fr[0],fr[2]]，y 区间=[fr[1],fr[3]]
+            for i in range(13):
+                t = i / 12.0
+                px, py = x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+                if fr[0] <= px <= fr[2] and fr[1] <= py <= fr[3]:
+                    return True
+            return False
+
+        _tag_no = 0
+        for p, _a, _dx, _dy in _layout:
             x, y = pos[p["key"]]
-            body.append(dot(x, y, p["label"], solid=p.get("solid", True),
+            # 远位标签归属（WW 口径：读者不猜就知道标签对应哪个点——文字没重叠不代表知道指哪个点）：
+            # 间隙 >30px 为远位；直线引线不被其他标签遮挡时画引线；被遮挡时升编号模式
+            #（点圈角标+标签编号前缀，对号不跟线——M10 overview 驻点引线穿秋水宽条带案）。
+            label = p["label"] + ("" if p.get("solid", True) else "（示意）")
+            _w = int(FS * sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in label))
+            _tx = x + _dx - (_w / 2 if _a == "middle" else (_w if _a == "end" else 0))
+            _ty = y + _dy
+            _fr = (_tx, _ty - FS - 4, _tx + _w, _ty + 7)
+            _nx = max(_tx, min(x, _tx + _w)); _ny = max(_ty - FS - 4, min(y, _ty + 7))
+            _gap = ((_nx - x) ** 2 + (_ny - y) ** 2) ** 0.5 - 11
+            _leader_label = p["label"]
+            if _gap > 30:
+                _blocked = any(ent[0] != p["key"] and _seg_in_rect(x, y, _nx, _ny, ent[1:])
+                               for ent in _frames)
+                if not _blocked:
+                    body.append(leader_line(x, y, _tx, _ty - FS - 4, _tx + _w, _ty + 7))
+                else:
+                    _tag_no += 1
+                    _leader_label = "%d %s" % (_tag_no, p["label"])
+                    body.append("<text x='%d' y='%d' font-size='15' font-weight='bold' fill='#ffffff' "
+                                "text-anchor='middle'>%d</text>" % (x, y + 5, _tag_no))
+            body.append(dot(x, y, _leader_label, solid=p.get("solid", True),
                             anchor=_a, dx=_dx, dy=_dy))
         rows = []
         for i, r in enumerate(mp.get("list", [])):

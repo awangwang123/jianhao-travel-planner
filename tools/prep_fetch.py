@@ -30,7 +30,7 @@ def fx(base):
         j = json.loads(_get("https://api.frankfurter.dev/v1/latest?base=%s&symbols=CNY" % base))
         import datetime
         return {"rate": j["rates"]["CNY"], "date": j["date"], "source": "ECB via frankfurter.dev",
-                "fetched_at": datetime.datetime.now().isoformat(timespec="seconds")}
+                "fetched_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds")}
     except Exception as e:
         return {"error": repr(e)[:60]}
 

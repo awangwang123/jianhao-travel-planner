@@ -57,7 +57,7 @@
 | pax | {adults,children,note} | ✅ | 人数 |
 | tier | 枚举 | ✅ | `fast`/`standard`/`premium`（档位感知用） |
 | timezones | [{area,utc_offset,vs_home_hours}] | ✅ | 时差；`utc_offset` 格式 `+HH:MM`；`vs_home_hours` 数字（意冬令时=-7） |
-| fx | [{base,quote,rate,checked_at,source}] | ◆条件必填 | 汇率表；预算折算唯一依据。**全 CNY 册可整表省略（工具按 1:1 处理，v1.20 对齐——此前 ✅ 必填口径坑了国内册，M9 实测）**；含外币币种时必填，**目标币种缺汇率=校验 FAIL**（无法折算禁出预算）。**checked_at=实抓日期（YYYY-MM-DD，取自 prep_fetch 输出 fx 条目的 `fetched_at` 机器时戳的日期部分），禁手编日期**；`fetched_at`/`checked_at` 只证明"何时抓取"，**不改变核实状态**——是否已核准由 fact.status 等独立字段表达，机器时戳不得当核准依据；存量旧记录的手写日期保留原值，**禁回填伪造机器时戳** |
+| fx | [{base,quote,rate,checked_at,source}] | ◆条件必填 | 汇率表；预算折算唯一依据。**全 CNY 册可整表省略（工具按 1:1 处理，v1.20 对齐——此前 ✅ 必填口径坑了国内册，M9 实测）**；含外币币种时必填，**目标币种缺汇率=校验 FAIL**（无法折算禁出预算）。**checked_at=实抓日期（YYYY-MM-DD，取自 prep_fetch 输出 fx 条目的 `fetched_at` 机器时戳的日期部分；时戳带本地时区后缀如 `+08:00`），禁手编日期**；`fetched_at`/`checked_at` 只证明"何时抓取"，**不改变核实状态**——是否已核准由 fact.status 等独立字段表达，机器时戳不得当核准依据（工具自动写入≠不可修改，防篡改不在本方案范围）；存量旧记录的手写日期保留原值，**禁回填伪造机器时戳**；**覆盖范围=汇率查询**，车次/门票/酒店等其他事实查询的时点记录尚未统一接入 |
 | customize | {play_start} | — | 游玩开始锚点（V17，v1.2 R5 终版）：`play_start` 默认游玩开始线（`"09:30"`，09:30—10:00 开始游玩）。**起床不入册**：R4 的 `wake_earliest` 键作废（读到仅 WARN）；早餐/交通按需安排、可在此前，不校验 |
 | schema_version | string | ✅ | `"1.0"` |
 
