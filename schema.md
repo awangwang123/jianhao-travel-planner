@@ -57,7 +57,7 @@
 | pax | {adults,children,note} | ✅ | 人数 |
 | tier | 枚举 | ✅ | `fast`/`standard`/`premium`（档位感知用） |
 | timezones | [{area,utc_offset,vs_home_hours}] | ✅ | 时差；`utc_offset` 格式 `+HH:MM`；`vs_home_hours` 数字（意冬令时=-7） |
-| fx | [{base,quote,rate,checked_at,source}] | ◆条件必填 | 汇率表；预算折算唯一依据。**全 CNY 册可整表省略（工具按 1:1 处理，v1.20 对齐——此前 ✅ 必填口径坑了国内册，M9 实测）**；含外币币种时必填，**目标币种缺汇率=校验 FAIL**（无法折算禁出预算） |
+| fx | [{base,quote,rate,checked_at,source}] | ◆条件必填 | 汇率表；预算折算唯一依据。**全 CNY 册可整表省略（工具按 1:1 处理，v1.20 对齐——此前 ✅ 必填口径坑了国内册，M9 实测）**；含外币币种时必填，**目标币种缺汇率=校验 FAIL**（无法折算禁出预算）。**checked_at=实抓日期（YYYY-MM-DD，取自 prep_fetch 输出 fx 条目的 `fetched_at` 机器时戳的日期部分），禁手编日期**；`fetched_at`/`checked_at` 只证明"何时抓取"，**不改变核实状态**——是否已核准由 fact.status 等独立字段表达，机器时戳不得当核准依据；存量旧记录的手写日期保留原值，**禁回填伪造机器时戳** |
 | customize | {play_start} | — | 游玩开始锚点（V17，v1.2 R5 终版）：`play_start` 默认游玩开始线（`"09:30"`，09:30—10:00 开始游玩）。**起床不入册**：R4 的 `wake_earliest` 键作废（读到仅 WARN）；早餐/交通按需安排、可在此前，不校验 |
 | schema_version | string | ✅ | `"1.0"` |
 
@@ -256,7 +256,7 @@
             "target": {"day": 2}, "note1": "虚线=车行段…", "note2": "高德瓦片底图…",
             "points": [
               {"key": "zf", "lonlat": [112.6897,27.29722], "label": "祝融峰", "solid": true,
-               "anchor": "middle", "dx": 0, "dy": -40, "slot_refs": ["d2s7","d2s8"]},
+               "slot_refs": ["d2s7","d2s8"]},
               {"key": "ntm", "lonlat": [112.695,27.283], "label": "南天门", "solid": false, "slot_refs": ["d2s3"]}],
             "lines": [{"via": ["gk","ntm"], "dash": true, "width": 8}],
             "list": [{"place": "环保车进山", "ev": [
@@ -264,7 +264,7 @@
               {"est": {"ref": "d2s3", "add": 45, "label": "车程中值"}}, {"lit": " 抵南天门片区"}]}]}}}
 ```
 
-- `points[]`：`key` 供 lines 引用；`solid:false`=空心虚线示意点（图内自动带「（示意）」，与「未核实不落精确点」口径同规则）；`slot_refs`=该点位关联的 slot id（**悬空=FAIL**）
+- `points[]`：`key` 供 lines 引用；`solid:false`=空心虚线示意点（图内自动带「（示意）」，与「未核实不落精确点」口径同规则）；`slot_refs`=该点位关联的 slot id（**悬空=FAIL**）。**标签位置不用手工调 `anchor`/`dx`/`dy`**——未显式指定的点由工具自动布标（按图内位置自动选边+标签碰撞避让），自动结果不理想时才显式指定（显式值照用，示例与常规填写一律不带这三个参数）
 - `list[].ev` 事件句：`{"t":"d2s3"}` slot 引用 ／ `{"t":"tr003.applicability.dep_time"}` 业务正本引用（完整路径）／ `{"est":{"ref","add","label"}}` 推算（+分钟，渲染带「约」）／ `{"diff":{"est_ref","est_add","to"}}` 分钟差（余量句）／ `{"lit":"..."}` 字面。**一切时刻禁字面写**，否则审计 FAIL
 - `target`：`{"figure":true}`=总览 figure_html；`{"day":N}`=days[N-1].svg_html
 - 运行：`py tools/route_map.py <trip_data.json>`（底图瓦片拼接用包内 assets/basemap_tool.py，无本机外部依赖）

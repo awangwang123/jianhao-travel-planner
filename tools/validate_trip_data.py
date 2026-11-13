@@ -47,7 +47,7 @@ FIX_HINTS = {
     "V04": "引用类型错：ref 改指向匹配表（餐段→m、航班→f、住宿→s），或改正 slot type",
     "V05": "包含关系成环或指向不存在的明细：理顺包含链（谁含谁），被含项最终挂主选明细",
     "V06": "枚举值非法：对照 schema.md §6 枚举表改正，禁自创取值",
-    "V07": "日期 YYYY-MM-DD、时差 ±HH:MM、汇率>0 且 fx.quote 全表一致、days.date=MM-DD",
+    "V07": "日期 YYYY-MM-DD、时差 ±HH:MM、汇率>0 且 fx.quote 全表一致、days.date=MM-DD（fx.checked_at=prep_fetch fetched_at 的实抓日期，禁手编；时戳≠核准状态，旧记录保留原值不回填）",
     "V08": "净价+税必须带 tax_rate（小数）；区间价保证 min≤max；amount 与 min/max 至少其一",
     "V09": "days.day 必须从 1 连续编号：补齐缺失日或重排",
     "V10": "预算无法折算：为缺失币种补 meta.fx（带 checked_at+source），或改正 currency 拼写",

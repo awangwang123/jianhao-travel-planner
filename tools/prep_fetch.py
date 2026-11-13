@@ -28,7 +28,9 @@ def sun(lat, lon, dates):
 def fx(base):
     try:
         j = json.loads(_get("https://api.frankfurter.dev/v1/latest?base=%s&symbols=CNY" % base))
-        return {"rate": j["rates"]["CNY"], "date": j["date"], "source": "ECB via frankfurter.dev"}
+        import datetime
+        return {"rate": j["rates"]["CNY"], "date": j["date"], "source": "ECB via frankfurter.dev",
+                "fetched_at": datetime.datetime.now().isoformat(timespec="seconds")}
     except Exception as e:
         return {"error": repr(e)[:60]}
 

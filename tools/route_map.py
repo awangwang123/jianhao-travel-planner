@@ -133,17 +133,73 @@ def auto_layout(points, pos, W, H):
         return int(FS * sum(0.55 if ord(c) < 0x2E80 else 1.0 for c in label))
 
     def rect(x, y, anchor, dx, dy, w):
+        # 判定框对齐真实渲染字形 bbox（Chrome 实测 26px 汉字 getBBox 高 35、顶 -28/底 +7
+        # 相对基线）——原 FS+4 判定框比真实框矮，垂直相邻档出现「判定分离、渲染重叠 3px」
+        # （M10 overview 秋水×八一贴面案）。
         tx = x + dx - (w / 2 if anchor == "middle" else (w if anchor == "end" else 0))
-        return (tx, y + dy - FS, tx + w, y + dy + 4)
+        return (tx, y + dy - FS - 4, tx + w, y + dy + 7)
 
     def hits(r):
         return any(not (r[2] < q[0] or r[0] > q[2] or r[3] < q[1] or r[1] > q[3]) for q in placed)
 
+    all_dots = [(pos[p["key"]][0], pos[p["key"]][1]) for p in points]
+
+    def hit_dot(r):
+        # 标签矩形 vs 全部点圈（r=11+白描边余量 3）——M10 overview 实证：只避标签不避点，
+        # 南昌西站标签横穿三点点簇、秋水广场贴擦自己圈顶，视觉切圈。
+        return any(not (r[2] < cx - 14 or r[0] > cx + 14 or r[3] < cy - 14 or r[1] > cy + 14)
+                   for cx, cy in all_dots)
+
     def out(r):
         return r[0] < 0 or r[2] > W or r[1] < 0 or r[3] > H
 
+    def place_one(x, y, w):
+        """为单个点选位：首选边→换边→middle 居中错位→fallback（只避点圈的次优）→None。
+        在 placed（当前已放置标签矩形）约束下求解。"""
+        a = "end" if x > W * 0.6 else "start"
+        base = 16 if y < H * 0.15 else (-16 if y > H * 0.85 else -12)
+        # 首选边放不下（全出界）时自动换另一边再试（M10 overview 秋水广场案：靠右点向右展必出界，
+        # 向左展可放——换边能力缺失曾使「不设手工锚点」的自动布标在此类点必 FAIL）。
+        other = "start" if a == "end" else "end"
+        sides = [(a, -14 if a == "end" else 14), (other, -14 if other == "end" else 14)]
+        chosen = None
+        fallback = None
+        for a_c, dx_c in sides:
+            # 间距扩展（14→18→22）：M10 overview 八一广场案——点簇饱和带里 14px 间距
+            # 与已放标签/点框连环贴面（差 0px 被保守判撞），扩距即得全分离解。
+            for gap in (0, 4, 8):
+                dx_v = dx_c + gap if dx_c >= 0 else dx_c - gap
+                for dy in (base, base + 18, base - 18, base + 36, base - 36, base + 54, base - 54):
+                    r = rect(x, y, a_c, dx_v, dy, w)
+                    if out(r):
+                        continue
+                    if not hits(r) and not hit_dot(r):
+                        return (a_c, dx_v, dy, r)
+                    if fallback is None and not hit_dot(r):
+                        fallback = (a_c, dx_v, dy, r)
+        if chosen is None:
+            # 两边水平都放不下（点居中+标签宽 > 半幅）：middle 居中锚点+垂直错位，
+            # 文字置于点上方（dy≤-16）/下方（dy≥42）避点圈（r=11，FS=26）；
+            # 仍撞时 dx 水平微调（±20/±40）——M10 overview 八一广场案：下方带被
+            # 滕王阁标签占 7px 重叠，微调左移即分离，纯垂直序列无解。
+            for dy in (-16, -34, -52, -70, -88, 42, 60, 78, 96):
+                for ddx in (0, -20, 20, -40, 40):
+                    r = rect(x, y, "middle", ddx, dy, w)
+                    if out(r) or hits(r) or hit_dot(r):
+                        continue
+                    return ("middle", ddx, dy, r)
+        return fallback or None
+
     layout = []
-    for p in points:
+    # 宽标签先放（显式锚点最优先）：大障碍先占位、小标签灵活补缝——label placement
+    # 标准启发式。M10 overview 实证：窄标签先放会占掉宽标签的唯一近距解，把它挤到
+    # 距点 100px+ 的远位（归属歧义）。
+    order = sorted(range(len(points)),
+                   key=lambda i: (0 if (("anchor" in points[i]) or ("dx" in points[i])
+                                        or ("dy" in points[i])) else 1,
+                                  -est_w(points[i]["label"] + ("" if points[i].get("solid", True) else "（示意）"))))
+    for idx in order:
+        p = points[idx]
         x, y = pos[p["key"]]
         label = p["label"] + ("" if p.get("solid", True) else "（示意）")
         w = est_w(label)
@@ -152,27 +208,35 @@ def auto_layout(points, pos, W, H):
             dx = int(p.get("dx", 14))
             dy = int(p.get("dy", -12))
             placed.append(rect(x, y, a, dx, dy, w))
-            layout.append((p, a, dx, dy))
+            layout.append([p, a, dx, dy, rect(x, y, a, dx, dy, w), False])
             continue
-        a = "end" if x > W * 0.6 else "start"
-        dx = -14 if a == "end" else 14
-        base = 16 if y < H * 0.15 else (-16 if y > H * 0.85 else -12)
-        chosen = None
-        fallback = None
-        for dy in (base, base + 18, base - 18, base + 36, base - 36, base + 54, base - 54):
-            r = rect(x, y, a, dx, dy, w)
-            if out(r):
-                continue
-            if not hits(r):
-                chosen = (a, dx, dy, r)
-                break
-            if fallback is None:
-                fallback = (a, dx, dy, r)
-        if chosen is None:
-            chosen = fallback or (a, dx, base, rect(x, y, a, dx, base, w))
-        placed.append(chosen[3])
-        layout.append((p, chosen[0], chosen[1], chosen[2]))
-    return layout
+        pick = place_one(x, y, w)
+        if pick is None:
+            pick = ("start", 14, -12, rect(x, y, "start", 14, -12, w))
+        placed.append(pick[3])
+        layout.append([p, pick[0], pick[1], pick[2], pick[3], False])
+    # 复检重放（M10 overview 实证：贪心顺序放置=先放者不知后来者，两个 middle 同 dy
+    # 的同纬度点终局相交；fallback 只避点圈不避标签相交。全量约束已知后对相交的
+    # 自动放置标签重选一轮，消除顺序依赖）：
+    for i, ent in enumerate(layout):
+        if ent[5]:          # 显式锚点不重放
+            continue
+        r_i = ent[4]
+        clash = any(ent[4] is not q and not (r_i[2] < q[0] or r_i[0] > q[2]
+                                             or r_i[3] < q[1] or r_i[1] > q[3])
+                    for q in placed)
+        if not clash:
+            continue
+        placed = [q for q in placed if q is not r_i]
+        x, y = pos[ent[0]["key"]]
+        label = ent[0]["label"] + ("" if ent[0].get("solid", True) else "（示意）")
+        pick = place_one(x, y, est_w(label))
+        if pick is not None and not any(not (pick[3][2] < q[0] or pick[3][0] > q[2]
+                                             or pick[3][3] < q[1] or pick[3][1] > q[3])
+                                        for q in placed):
+            ent[0], ent[1], ent[2], ent[3], ent[4] = ent[0], pick[0], pick[1], pick[2], pick[3]
+        placed.append(ent[4])
+    return [(e[0], e[1], e[2], e[3]) for e in layout]
 
 
 def dot(x, y, place, solid=True, anchor="start", dx=14, dy=-12):
