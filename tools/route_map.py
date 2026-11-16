@@ -303,6 +303,14 @@ def main():
         sys.exit(2)
     data_path = os.path.abspath(sys.argv[1])
     d = json.load(io.open(data_path, encoding="utf-8"))
+    # v1.20 图像选项（schema §5d）：map:false=配置声明关闭，显式跳过（非静默）；
+    # 数据闸 V27 已拦「声明关图却带 map_spec.maps」矛盾——走到这里还带 maps 即入口兜底拦。
+    if not (d.get("image_options") or {}).get("map", True):
+        if (d.get("map_spec") or {}).get("maps"):
+            print("FAIL: image_options.map=false 但 map_spec.maps 非空——配置与数据矛盾（先跑 validate_trip_data 看 V27）")
+            sys.exit(1)
+        print("⏭ image_options.map=false —— 配置声明本册无地图，跳过导览图生成。")
+        return
     spec = d.get("map_spec")
     if not isinstance(spec, dict) or not spec.get("maps"):
         # v1.20 候选九批（v128，M9 实证）：禁静默跳过——无真底图必须显式声明，

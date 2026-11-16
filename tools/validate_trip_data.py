@@ -63,6 +63,7 @@ FIX_HINTS = {
     "V24": "overview_structured.weather 每项必须是 {d,w,t} 三个非空字符串键的对象——字符串数组渲染会 TypeError（M9C R4 实证）；空数组=缺按天天气格（家族基准件）",
     "V25": "当天缺餐行：在 days[n].slots 补一条 type=meal 的 slot（ref 绑 meals 表、text 以「早餐·/午餐·/晚餐·」开头）——补数据不是拿无关 slot 补字面词过闸；确无该餐（如索道长间隔）在相关 slot 文案写明「午/晚餐…安排」自然覆盖",
     "V26": "真底图导览数据：按 schema §5c 填 map_spec.maps（bbox/z/points 坐标须当次实查，禁编造——0/null 占位=未实查必拦）；确实出不了图（无网/瓦片源失败）保留 maps 空+交付说明声明示意稿口径",
+    "V27": "图像选项：image_options={map:bool, photo:bool}（§5d，缺省=双开）；map:false 时删 map_spec.maps、photo:false 时清 assets——声明与数据必须一致，矛盾即拦",
 }
 
 
@@ -532,6 +533,51 @@ def check_map_spec(data, v):
             v.fail("V26", "map_spec", b)
     else:
         v.ok("V26", "map_spec 数据合法（%d 图：bbox/z/坐标全填）" % len(maps))
+
+
+def check_image_options(data, v):
+    """V27（v1.20）: 图像选项闸——
+    image_options={map,photo} 双 bool（字段缺失=双开，存量兼容；非 bool 值=FAIL）。
+    声明与数据矛盾=FAIL：map:false 而 map_spec.maps 非空（声明关图却带图数据）；
+    photo:false 而 assets 表非空（声明关照片却带配图资产）。
+    四组合（无图/仅地图/仅照片/全开）合法性由此把关；检查分流由成品闸按渲染注入标记执行。"""
+    io_ = data.get("image_options")
+    if io_ is None:
+        v.ok("V27", "image_options 未声明——按双开处理（存量数据兼容）")
+        return
+    if not isinstance(io_, dict):
+        v.fail("V27", "image_options", "期望 {map:bool, photo:bool}，实际 %r" % (io_,))
+        return
+    bad = []
+    opts = {}
+    for k in ("map", "photo"):
+        val = io_.get(k, True)   # 缺键=bool 缺省双开
+        if not isinstance(val, bool):
+            bad.append("image_options.%s 期望 bool，实际 %r" % (k, val))
+        opts[k] = val
+    if bad:
+        for b in bad:
+            v.fail("V27", "image_options", b)
+        return
+    if not opts["map"]:
+        maps = (data.get("map_spec") or {}).get("maps")
+        if maps:
+            v.fail("V27", "image_options.map",
+                   "声明关闭地图，但 map_spec.maps 非空（%d 图）——配置与数据矛盾：删 map_spec 或改回 map:true" % len(maps))
+    if not opts["photo"]:
+        assets = data.get("assets")
+        if assets:
+            v.fail("V27", "image_options.photo",
+                   "声明关闭照片，但 assets 表非空（%d 条）——配置与数据矛盾：清空 assets 或改回 photo:true" % len(assets))
+        # days[].photos_html 也是照片载体（embed 入口写这里）——配置关照片必须一并清
+        ph_days = [dy.get("day") for dy in data.get("days", []) if dy.get("photos_html")]
+        if ph_days:
+            v.fail("V27", "image_options.photo",
+                   "声明关闭照片，但 days[%s].photos_html 非空——配置与数据矛盾：清空 photos_html 或改回 photo:true"
+                   % ",".join(str(x) for x in ph_days))
+    if "V27" not in v.fails:
+        combo = {True: "开", False: "关"}
+        v.ok("V27", "图像选项合法：地图%s / 照片%s" % (combo[opts["map"]], combo[opts["photo"]]))
 
 
 def check_structured_fields(data, v):
@@ -1380,6 +1426,7 @@ def main():
     check_weather_shape(data, v)
     check_meal_coverage(data, v)
     check_map_spec(data, v)
+    check_image_options(data, v)
     check_structured_fields(data, v)
     summary = budget_calc(data, v)
 

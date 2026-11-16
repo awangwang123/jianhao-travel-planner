@@ -666,6 +666,21 @@ def main():
         DATA, OUT = sys.argv[1], sys.argv[2]
     data, h = load()
     I = idx(data)
+    # v1.20 图像选项（schema §5d）：map:false 时渲染前清空历史导览图字段——
+    # route_map 曾注入的 days[].svg_html / overview_structured.figure_html 属「数据里的旧图」，
+    # 不清则关图配置不生效（残留图随渲染进成品，成品闸矛盾闸兜底=事后拦，这里是源头清）。
+    if not (data.get("image_options") or {}).get("map", True):
+        _cleared = 0
+        for _dy in data.get("days", []):
+            if _dy.get("svg_html"):
+                _dy["svg_html"] = ""
+                _cleared += 1
+        _ov = data.get("overview_structured") or {}
+        if _ov.get("figure_html"):
+            _ov["figure_html"] = ""
+            _cleared += 1
+        if _cleared:
+            print("⏭ image_options.map=false —— 已清 %d 处历史导览图字段（svg_html/figure_html）" % _cleared)
     m = data["meta"]
     need_days = len(data["days"])
     # 骨架扩天：克隆 day5 壳为 day6-N（插在 day5 后）
@@ -835,6 +850,14 @@ def main():
     _d = _os.path.dirname(_os.path.abspath(OUT))
     if _d and not _os.path.isdir(_d):
         _os.makedirs(_d, exist_ok=True)
+    # v1.20 图像选项标记（schema §5d）：成品闸按此分流——关闭项记「不适用（配置声明）」，
+    # 开启项照常拦截；配置与成品矛盾（标记关图却检出图）由 checklist 拦截。
+    _io = data.get("image_options") or {}
+    _map_on = _io.get("map", True)
+    _photo_on = _io.get("photo", True)
+    _mark = "<!-- image-options: map=%s photo=%s -->\n" % ("on" if _map_on else "off",
+                                                           "on" if _photo_on else "off")
+    h = h.replace("</head>", _mark + "</head>", 1)
     io.open(OUT, "w", encoding="utf-8").write(h)
     print("✅ 写出 %s（%d 字符）" % (OUT, len(h)))
     print("指纹在位：%s ✓" % FINGERPRINT)

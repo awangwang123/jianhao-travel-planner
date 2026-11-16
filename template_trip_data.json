@@ -635,6 +635,10 @@
   "tail_cards": [],
   "tail_footer": null
  },
+ "image_options": {
+  "map": true,
+  "photo": true
+ },
  "map_spec": {
   "clear_routes": true,
   "maps": {}

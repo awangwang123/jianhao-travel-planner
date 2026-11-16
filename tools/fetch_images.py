@@ -143,6 +143,11 @@ def cmd_embed(args):
     保障: 写前留底 .bak-embed-时间戳；写后深比对断言——除目标 photos_html 外零变化。"""
     data_p = os.path.abspath(args.data)
     d = json.load(io.open(data_p, encoding="utf-8"))
+    # v1.20 图像选项（schema §5d）：photo:false=配置声明本册无每日风景照片——embed 入口拦，
+    # 防止照片被回填进关照片的册子（成品闸矛盾闸兜底，这里是源头拦）。
+    if not (d.get("image_options") or {}).get("photo", True):
+        print("FAIL: image_options.photo=false —— 本册配置声明无照片，embed 拒绝执行；如需照片改回 photo:true")
+        sys.exit(1)
     plan = json.load(io.open(os.path.abspath(args.plan), encoding="utf-8"))
     imgdir = os.path.abspath(args.out)
     manifest = {x.get("file"): x for x in _load_manifest(imgdir)}

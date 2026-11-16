@@ -57,6 +57,10 @@ def write_summary(out_html, data, steps, checklist_out):
     lines.append("|---|---|")
     total = 0.0
     for name, dur in steps:
+        if isinstance(dur, str):
+            # v1.20 图像选项跳过步（配置声明）——无耗时，不计入合计
+            lines.append("| %s | %s |" % (name, dur))
+            continue
         lines.append("| %s | %.0fs |" % (name, dur))
         total += dur
     lines.append("| **全链合计** | **%.0fs（%.1f 分钟）** |" % (total, total / 60))
@@ -131,8 +135,17 @@ def main():
     try:
         _, d1 = run("① 数据闸", [PY, os.path.join(HERE, "validate_trip_data.py"), data])
         steps.append(("数据闸", d1))
-        _, d2 = run("② 地图生成 route_map", [PY, os.path.join(HERE, "route_map.py"), data])
-        steps.append(("地图 route_map", d2))
+        # v1.20 图像选项（schema §5d）：map:false 跳过地图生成步（配置声明，非偷跑——
+        # 数据闸 V27 已拦「声明关图却带 map_spec」矛盾），渲染出的成品无导览图，
+        # 成品闸按 gen 注入的 image-options 标记记「不适用」。
+        import json as _j
+        _io = _j.load(open(data, encoding="utf-8")).get("image_options") or {}
+        if _io.get("map", True):
+            _, d2 = run("② 地图生成 route_map", [PY, os.path.join(HERE, "route_map.py"), data])
+            steps.append(("地图 route_map", d2))
+        else:
+            steps.append(("地图 route_map", "跳过（配置声明 map:false）"))
+            print("⏭ ② 地图生成跳过——image_options.map=false（配置声明）")
         _, d3 = run("③ 渲染 gen", [PY, os.path.join(HERE, "gen_roadbook.py"), data, out_html])
         steps.append(("渲染 gen", d3))
         routes_info, d4 = run("④ 旧路线注入(兼容)", [PY, os.path.join(HERE, "apply_routes.py"), data, out_html])

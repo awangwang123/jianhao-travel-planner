@@ -184,31 +184,59 @@ elif tl_bad:
 else:
     addp("slot 时间线", f"{len(days)} 天时间戳升序（读到 {tl_total} 个带时刻 slot）+同餐段无重复")
 
+# ---------- 2b. 图像选项标记解析（v1.20 §5d：gen_roadbook 注入 <!-- image-options: map=.. photo=.. -->；
+# 无标记=旧册按双开处理，存量兼容。关闭项检查记「不适用（配置声明）」；配置与成品矛盾=FAIL：
+# 声明关图却检出图=标记失真或渲染失控，拦。） ----------
+_mopt = re.search(r"<!-- image-options: map=(on|off) photo=(on|off) -->", t)
+OPT_MAP = (_mopt.group(1) == "on") if _mopt else True
+OPT_PHOTO = (_mopt.group(2) == "on") if _mopt else True
+if _mopt:
+    _mk = "SKIP" if not (OPT_MAP and OPT_PHOTO) else "PASS"
+    _dt = "配置声明：地图%s / 照片%s" % ("开" if OPT_MAP else "关（相关检查不适用）",
+                                      "开" if OPT_PHOTO else "关（相关检查不适用）")
+    results.append((_mk, "图像选项", _dt))
+    print({"PASS": "✅", "SKIP": "⏭"}.get(_mk, "·") + " [%s] 图像选项 | %s" % (_mk, _dt))
+
 # ---------- 2c. 动线图出界点断言（v1.9 立；v1.11 兼容 route-svg；v1.11r2 按 外部二次评审收紧：
 # 部分未检/形态不识别=FAIL 明确阻断、无图=SKIP 不适用、circle 计半径、相对命令与 transform 阻断。逻辑在 svg_bounds.py） ----------
 from svg_bounds import check_svg_bounds
-_svg = check_svg_bounds(t)
-if _svg["bad"]:
-    addf("动线图出界", "、".join(_svg["bad"]) + " —— 坐标越出 viewBox（bbox 必须覆盖路径全程，数学断言替代目测）")
-elif _svg["total"] == 0:
-    results.append(("SKIP", "动线图出界", "本册未检出任何带 viewBox 的 svg——无导览图可检；若本册应有路线图请排查生成/注入环节"))
-elif _svg["partial"] or _svg["unrecognized"]:
-    msg = "存在未能完成出界检查的导览图（部分未检≠通过，须改写为受支持形态或扩 bbox）："
-    if _svg["partial"]:
-        msg += " %s" % "；".join(_svg["partial"][:6])
-    if _svg["unrecognized"]:
-        msg += "；%d 张 svg 类名不在 zoomable/route-svg（无法识别是否导览图）" % _svg["unrecognized"]
-    addf("动线图出界", msg)
+if not OPT_MAP and _mopt:
+    if re.search(r"<svg[^>]*class=['\"](?:zoomable|route-svg)['\"]", t):
+        addf("动线图出界", "配置声明地图关闭，但成品检出导览图 svg——配置与成品矛盾（标记失真或渲染失控），核对 image_options 与生成环节")
+    else:
+        results.append(("SKIP", "动线图出界", "不适用（配置声明：本册无地图）"))
+        print("⏭ [SKIP] 动线图出界 | 不适用（配置声明：本册无地图）")
 else:
-    addp("动线图出界", "%d 张导览图坐标全在框内（容差 2px）" % _svg["checked"])
+    _svg = check_svg_bounds(t)
+    if _svg["bad"]:
+        addf("动线图出界", "、".join(_svg["bad"]) + " —— 坐标越出 viewBox（bbox 必须覆盖路径全程，数学断言替代目测）")
+    elif _svg["total"] == 0:
+        results.append(("SKIP", "动线图出界", "本册未检出任何带 viewBox 的 svg——无导览图可检；若本册应有路线图请排查生成/注入环节"))
+    elif _svg["partial"] or _svg["unrecognized"]:
+        msg = "存在未能完成出界检查的导览图（部分未检≠通过，须改写为受支持形态或扩 bbox）："
+        if _svg["partial"]:
+            msg += " %s" % "；".join(_svg["partial"][:6])
+        if _svg["unrecognized"]:
+            msg += "；%d 张 svg 类名不在 zoomable/route-svg（无法识别是否导览图）" % _svg["unrecognized"]
+        addf("动线图出界", msg)
+    else:
+        addp("动线图出界", "%d 张导览图坐标全在框内（容差 2px）" % _svg["checked"])
 
 # ---------- 2d. 导览图真底图在位性（v1.13/v128 收口：数据闸 WARN 不代替成品拦截——
 # 缺真底图的册子此前可带 WARN 一路绿灯到交付（指纹一致只证样式同源，证不了真底图实际生成）。
-# 形态判据：真底图=zoomable SVG 内嵌 <image> PNG base64（route_map 产物）；竖向示意兜底=route-svg 纯线条。） ----------
+# 形态判据：真底图=zoomable SVG 内嵌 <image> PNG base64（route_map 产物）；竖向示意兜底=route-svg 纯线条。
+# v1.20：map=off 记不适用+矛盾闸；map=off 由 gen 注入标记判定（防用户手写标记漏检——标记只由 gen 写）。） ----------
 _zoom_n = len(re.findall(r"<svg[^>]*class=['\"]zoomable['\"][^>]*>", t))
 _baseimg_n = len(re.findall(r"<image[^>]*(?:xlink:)?href=['\"]data:image/png;base64,", t))
 _rsvg_n = len(re.findall(r"<svg[^>]*class=['\"]route-svg['\"][^>]*>", t))
-if _zoom_n and _baseimg_n:
+if _mopt and not OPT_MAP:
+    if _zoom_n or _baseimg_n:
+        addf("导览图真底图", "配置声明地图关闭，但成品检出真底图导览图（zoomable %d/内嵌底图 %d）——配置与成品矛盾，核对 image_options 与生成环节"
+             % (_zoom_n, _baseimg_n))
+    else:
+        results.append(("SKIP", "导览图真底图", "不适用（配置声明：本册无地图）"))
+        print("⏭ [SKIP] 导览图真底图 | 不适用（配置声明：本册无地图）")
+elif _zoom_n and _baseimg_n:
     extra = "；另有 %d 张竖向兜底残留（建议 map_spec.clear_routes 退役竖向数据）" % _rsvg_n if _rsvg_n else ""
     addp("导览图真底图", "%d 张真底图导览图在位（内嵌底图）%s" % (_zoom_n, extra))
 elif _rsvg_n and not _zoom_n:
@@ -296,17 +324,25 @@ if broken:
 else:
     addp("价格切碎", "无")
 
-# ---------- 7b. 每日配图对称律（v3.38：每日 2 或 4 张，禁 3） ----------
-fig_bad = []
-for d in days:
-    m = re.search(r'<section id="' + d + r'".*?</section>', t, re.S)
-    n = m.group(0).count("<figure") if m else 0
-    if n not in (2, 4):
-        fig_bad.append(f"{d}={n}张")
-if fig_bad:
-    addf("配图对称律", "、".join(fig_bad) + "（v3.38：每日 2 或 4 张，.photos 为 2 列网格，3 张=不对称）")
+# ---------- 7b. 每日配图对称律（v3.38：每日 2 或 4 张，禁 3；v1.20：photo=off 记不适用+矛盾闸） ----------
+if _mopt and not OPT_PHOTO:
+    _ph_img = len(re.findall(r"<figure[^>]*>\s*<img[^>]+data:image/", t))
+    if _ph_img:
+        addf("配图对称律", "配置声明照片关闭，但成品检出 %d 张照片图（figure+base64）——配置与成品矛盾，核对 image_options 与图片嵌入环节" % _ph_img)
+    else:
+        results.append(("SKIP", "配图对称律", "不适用（配置声明：本册无每日风景照片）"))
+        print("⏭ [SKIP] 配图对称律 | 不适用（配置声明：本册无每日风景照片）")
 else:
-    addp("配图对称律", f"{len(days)} 天全部 2/4 张")
+    fig_bad = []
+    for d in days:
+        m = re.search(r'<section id="' + d + r'".*?</section>', t, re.S)
+        n = m.group(0).count("<figure") if m else 0
+        if n not in (2, 4):
+            fig_bad.append(f"{d}={n}张")
+    if fig_bad:
+        addf("配图对称律", "、".join(fig_bad) + "（v3.38：每日 2 或 4 张，.photos 为 2 列网格，3 张=不对称）")
+    else:
+        addp("配图对称律", f"{len(days)} 天全部 2/4 张")
 
 # ---------- 7c. navLock 特征（导航双通道，9/27 根治） ----------
 if "navLock" in t:

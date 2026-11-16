@@ -33,7 +33,13 @@ py tools/pipeline.py outline pkg_work/trip_data.json
 #      填写时把接驳写短（几点/什么方式/多久），玩法细节放进对应游玩 slot
 #    · map_spec 标签不用手工调 anchor/dx/dy——工具自动布标+避让；只有自动结果不理想才显式指定
 
-# 3. 配图（成品每日配图是硬要求；无 API key 用 Commons）
+# 2.5 图像选项（v1.20：先问用户再定，写进 trip_data 顶层）
+#    image_options: {"map": true, "photo": true}  ← 缺省=双开
+#    · map:false：跳过 map_spec 填写与地图生成步；photo:false：跳过配图全程
+#    · 关闭项相关检查记「不适用（配置声明）」；无图 HTML 仍是完整交付物
+#    · 声明与成品矛盾（关了图却检出图）=FAIL
+
+# 3. 配图（photo:true 时执行；无 API key 用 Commons）
 py tools/fetch_images.py search "洛阳 龙门石窟" --limit 5
 py tools/fetch_images.py fetch "File:xxx.jpg" --note "图注文字"
 #    下载→逐张亲验→回填只走 embed 入口（写 plan.json 后一条命令；只动 photos_html 字段，
