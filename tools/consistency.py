@@ -170,15 +170,10 @@ def verify_skeleton_assets(base_path=None):
     return pin, css_text, base_html
 
 
-<<<<<<< HEAD
 def collect_problems(s, base, css_text, pin, expect_days=None, photo_on=True):
     """对照基准骨架列出不一致。空列表 = 通过。不改 CSS、不改文档。
     v1.20 图像选项：photo_on=False（配置声明本册无照片）时跳过 ⑩ 每日配图数断言——
     无照片是配置声明而非版式缺陷；声明与成品矛盾由成品闸/checklist 矛盾闸把关。"""
-=======
-def collect_problems(s, base, css_text, pin, expect_days=None):
-    """对照基准骨架列出不一致。空列表 = 通过。不改 CSS、不改文档。"""
->>>>>>> origin/main
     b_ids = secs_of(base)
     b_non = [i for i in b_ids if not DAY_RE.match(i)]
     b_tok = tokens_of(base)
@@ -280,18 +275,11 @@ def collect_problems(s, base, css_text, pin, expect_days=None):
     if "__CITY__" in s:
         bad.append("残留 __CITY__")
 
-<<<<<<< HEAD
     # ⑩ 配图（photo_on=False 时跳过——无照片属配置声明，非版式缺陷）
     if photo_on:
         nfig = s.count("<figure")
         if nfig < ndays:
             bad.append("每日配图 %d 张 < 天数 %d" % (nfig, ndays))
-=======
-    # ⑩ 配图
-    nfig = s.count("<figure")
-    if nfig < ndays:
-        bad.append("每日配图 %d 张 < 天数 %d" % (nfig, ndays))
->>>>>>> origin/main
     return bad
 
 
@@ -321,12 +309,8 @@ def main():
     for f in a.files:
         s = read(f)
         n = os.path.basename(f)
-<<<<<<< HEAD
         bad = collect_problems(s, base, css_text, pin, a.days,
                                photo_on=not getattr(a, "photo_off", False))
-=======
-        bad = collect_problems(s, base, css_text, pin, a.days)
->>>>>>> origin/main
         ids = secs_of(s)
         days = [i for i in ids if DAY_RE.match(i)]
         has_intel = "intel" in ids
