@@ -2,7 +2,8 @@
 """pipeline.py —— v1.2 统一制作入口（任务书④：整合制作入口+自动计时，替代每册临时写脚本）
 用法:
   py tools/pipeline.py full <trip_data.json> <输出.html> [标题]
-      全链: validate → route_map(有 map_spec 时出图回写数据) → gen → apply_routes(旧 routes 兼容) → checklist
+      全链: validate → route_map(有 map_spec 且 map:true 时出图回写数据) → gen → apply_routes(有 routes 时)
+            → consistency 版式闸（不过就停，并删掉输出）→ checklist
       自动计时（timer start/end 落 timer_records.jsonl），各环节失败即停并报环节名
       v1.20 三批（11-05 复核）：地图工具接入正式入口——改行程后同一入口重跑，地图随数据同步，
       不再允许「手动跑 route_map 把结果算作入口完成」；审计失败(孤儿时刻/出界)即停链。
@@ -22,15 +23,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
 
 
-def run(step, cmd, must_fail_keywords=()):
+def run(step, cmd, must_fail_keywords=(), delete_on_fail=None):
     t0 = time.time()
     r = subprocess.run(cmd, capture_output=True)
     dur = time.time() - t0
     out = (r.stdout or b"").decode("utf-8", errors="replace") + (r.stderr or b"").decode("utf-8", errors="replace")
-    tail = "\n".join(out.strip().splitlines()[-3:]) if out.strip() else "(无输出)"
+    tail = "\n".join(out.strip().splitlines()[-12:]) if out.strip() else "(无输出)"
     print("── [%s] %s （%.0fs）" % ("OK" if r.returncode == 0 else "FAIL", step, dur))
     print(tail)
     if r.returncode != 0:
+        if delete_on_fail and os.path.exists(delete_on_fail):
+            os.remove(delete_on_fail)
+            print("已删除未过闸的输出: %s（避免漂掉的 HTML 留在盘上）" % delete_on_fail)
         print("⛔ 环节失败: %s（exit %d）——全链停止" % (step, r.returncode))
         sys.exit(1)
     return out, dur
@@ -151,9 +155,15 @@ def main():
         routes_info, d4 = run("④ 旧路线注入(兼容)", [PY, os.path.join(HERE, "apply_routes.py"), data, out_html])
         steps.append(("路线注入", d4))
         applied = "applied" in routes_info
+        base = os.path.join(HERE, "..", "assets", "路书_基准骨架.html")
+        _io2 = _j.load(open(data, encoding="utf-8")).get("image_options") or {}
+        _cargs = [PY, os.path.join(HERE, "consistency.py"), out_html, "--base", base]
+        if not _io2.get("photo", True):
+            _cargs.append("--photo-off")
+        run("④ 版式闸 consistency", _cargs, delete_on_fail=out_html)
         vis = ["--visual"] if "--visual" in sys.argv else []
-        ck_out, d5 = run("⑤ 成品闸", [PY, os.path.join(HERE, "checklist.py"), out_html] + vis)
-        steps.append(("成品闸", d5))
+        ck_out, d6 = run("⑥ 成品闸", [PY, os.path.join(HERE, "checklist.py"), out_html] + vis)
+        steps.append(("成品闸", d6))
     except SystemExit:
         outcome = "FAILED"
         timer_mod.end_timer(rec_tag, outcome=outcome)
