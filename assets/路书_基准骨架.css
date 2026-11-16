@@ -181,8 +181,11 @@ b,strong{color:var(--ink)}
 .pp figure:only-child{flex:1 1 100%}
 .pp img{max-width:100%;height:auto;display:block}
 @media(max-width:768px){.pp figure{flex-basis:100%}}
+<<<<<<< HEAD
 
 /* day_brief 节奏短表双形态（桌面表格 .tb 原样，≤900px 切两列卡片表） */
 .mlead{font-size:.82rem;color:var(--ink3);line-height:1.7;margin:.2em 0 .5em}
 .brief-m{display:none}
 @media(max-width:900px){.day_brief_tb{display:none}.brief-m{display:table;width:100%;border-collapse:collapse;margin-top:4px}.brief-m td{vertical-align:top;padding:8px 0;border-bottom:1px solid var(--line)}.brief-m tr.mgrp td{border-bottom:none;padding:16px 0 2px;font-size:.82rem;font-weight:700;color:var(--accent);letter-spacing:.08em}.brief-m td.mt{width:96px;min-width:96px;white-space:nowrap;font-size:.75rem;color:var(--ink2);line-height:1.5;padding-right:8px}.brief-m td.mt.hard{font-weight:700;color:var(--ink)}.brief-m td.ma{line-height:1.6;padding-left:2px}.brief-m td.ma b{font-size:.9rem}.brief-m .mhow{font-size:.8rem;color:var(--ink2);margin-top:2px;line-height:1.7}.brief-m .medge{font-size:.76rem;color:#6B5A22;margin-top:2px;line-height:1.6}}
+=======
+>>>>>>> origin/main
