@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """route_map.py —— v1.20 真底图导览图通用生成器（数据驱动，替代每册手写地图脚本）
-任务书二-1/二-2 + WW 2026-11-04 复核：地图由「册级专用脚本+硬编码时刻」改为
+任务书二-1/二-2 + 2026-11-04 复核：地图由「册级专用脚本+硬编码时刻」改为
 「通用渲染器 + trip_data.map_spec 数据」。换目的地=填 map_spec，不改工具。
 
 用法: 从包根（或任意目录）跑: py tools/route_map.py <trip_data.json>
@@ -8,7 +8,7 @@
       写 maps/<base>.png 与 svg 文本 → 注入 trip_data（overview_structured.figure_html /
       days[].svg_html）→ 审计通过后回写 trip_data.json；审计失败不回写、exit 1。
 
-硬闸（WW 二轮复核四项的机制化）:
+硬闸（二轮复核四项的机制化）:
   A1 单源审计：产物文本中一切 HH:MM 必须经 slot/transport 引用或 EST 推算登记，
      孤儿时刻=FAIL（「读了数据≠渲染了该数据」——M7 假单源案）；
   A2 挂点校验：points[].slot_refs 与 ev 引用必须解析到本册真实 slot/transport（悬空=FAIL）
@@ -267,7 +267,7 @@ def dot(x, y, place, solid=True, anchor="start", dx=14, dy=-12):
         % (x + dx, ty, FS, anchor, label)]))
 
 def leader_line(x, y, rx1, ry1, rx2, ry2):
-    """远位标签引线（2026-11-13 WW 口径：读者不猜就知道标签对应哪个点——
+    """远位标签引线（2026-11-13 设计口径：读者不猜就知道标签对应哪个点——
     自动布标在密集簇可能给出远位解，零碰撞≠归属清晰；文字没重叠不代表读者知道它指哪个点）。
     从点圈边缘到标签字形框最近点的细实线；实线细线与动线（粗）/车行段（虚）区分。"""
     nx = max(rx1, min(x, rx2)); ny = max(ry1, min(y, ry2))
@@ -376,7 +376,7 @@ def main():
         _tag_no = 0
         for p, _a, _dx, _dy in _layout:
             x, y = pos[p["key"]]
-            # 远位标签归属（WW 口径：读者不猜就知道标签对应哪个点——文字没重叠不代表知道指哪个点）：
+            # 远位标签归属（设计口径：读者不猜就知道标签对应哪个点——文字没重叠不代表知道指哪个点）：
             # 间隙 >30px 为远位；直线引线不被其他标签遮挡时画引线；被遮挡时升编号模式
             #（点圈角标+标签编号前缀，对号不跟线——M10 overview 驻点引线穿秋水宽条带案）。
             label = p["label"] + ("" if p.get("solid", True) else "（示意）")

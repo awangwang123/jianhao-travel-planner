@@ -4,7 +4,7 @@
   py tools/pipeline.py full <trip_data.json> <输出.html> [标题]
       全链: validate → route_map(有 map_spec 时出图回写数据) → gen → apply_routes(旧 routes 兼容) → checklist
       自动计时（timer start/end 落 timer_records.jsonl），各环节失败即停并报环节名
-      v1.20 三批（WW/Codex 11-05）：地图工具接入正式入口——改行程后同一入口重跑，地图随数据同步，
+      v1.20 三批（11-05 复核）：地图工具接入正式入口——改行程后同一入口重跑，地图随数据同步，
       不再允许「手动跑 route_map 把结果算作入口完成」；审计失败(孤儿时刻/出界)即停链。
   py tools/pipeline.py check <成品.html>            # 只跑 checklist
   py tools/pipeline.py validate <trip_data.json>    # 只跑数据闸

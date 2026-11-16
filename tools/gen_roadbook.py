@@ -102,7 +102,7 @@ def r_day_brief(brief, slots, I):
     （估抵=引用时刻+正文时长推算，渲染带「约」）——改 slots 短表自动同步，不产生第二处手写时刻。
     how/edge 文本支持 {tr:ID.applicability.字段} 占位符（经 _fill_tr 查正本填充）。
     行字段：seg 段名 / from / to(可省) / how 方式与时长 / edge 边界·余量(可省)；head/widths 可选。
-    手机双形态（WW 11-05 拍板 v7，替代 11-04 卡片）：≤900px 切两列表格 .brief-m——
+    手机双形态（11-05 定稿 v7，替代 11-04 卡片）：≤900px 切两列表格 .brief-m——
     行可带 grp（连续同值归入分组行）/ mobile_t（弹性表述模板，{from}/{to}=单源时刻占位）/ hard（守时项加粗）；
     brief.lead=导语（桌面手机共用）。旧数据无新字段时行为向后兼容（无分组/直排时刻）。"""
     by_id = {s.get("id"): s for s in slots if s.get("id")}
@@ -135,7 +135,7 @@ def r_day_brief(brief, slots, I):
         edge = _fill_tr(r.get("edge", ""), I, "row%d.edge" % i)
         trs.append("    <tr><td><b>%s</b></td><td>%s</td><td>%s</td><td>%s</td></tr>"
                    % (esc(r.get("seg", "")), win, esc(how), esc(edge)))
-        # 手机两列表格（WW 11-05 拍板 v7 形态，替代 11-04 卡片）：grp 分组行 / mobile_t 弹性表述模板 /
+        # 手机两列表格（11-05 定稿 v7 形态，替代 11-04 卡片）：grp 分组行 / mobile_t 弹性表述模板 /
         # hard 守时加粗。时刻仍走 slots 单源（cell_t），mobile_t 只是表述模板（{from}/{to} 占位）。
         grp = (r.get("grp") or "").strip()
         if grp and grp != prev_grp:
@@ -827,7 +827,7 @@ def main():
                   ".pp figure:only-child{flex:1 1 100%}"
                   ".pp img{max-width:100%;height:auto;display:block}"
                   "@media(max-width:768px){.pp figure{flex-basis:100%}}"
-                  # day_brief 节奏短表双形态：桌面表格（骨架原 .tb），≤900px 切 v7 两列表格（WW 11-05 拍板，
+                  # day_brief 节奏短表双形态：桌面表格（骨架原 .tb），≤900px 切 v7 两列表格（11-05 定稿，
                   # 替代 11-04 卡片）：grp 分组行 + mobile_t 弹性表述 + hard 守时加粗，时刻单源不变
                   ".mlead{font-size:.82rem;color:var(--ink3);line-height:1.7;margin:.2em 0 .5em}"
                   ".brief-m{display:none}"
